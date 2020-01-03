@@ -42,4 +42,5 @@ int main(void)
 	closesocket(hClient);
 	closesocket(hListen);
 	WSACleanup();		// 소켓 종료
+	return 0;
 }
