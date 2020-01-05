@@ -130,7 +130,7 @@ int main(void)
 				break;
 			}
 
-			hClient = accept(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, (struct SOCKADDR*) & tClientAddr, &Iaddrlen);
+			hClient = accept(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, ( SOCKADDR*) &tClientAddr, &Iaddrlen);
 			if (hClient == INVALID_SOCKET)
 			{
 				fprintf(stderr, "Client Accept Fail\n");
@@ -168,7 +168,7 @@ int main(void)
 				printf("TRACE - Receive Message : %s (%d bytes)\n", MessageBuffer, receiveBytes);
 			}
 		}
-		if (NetworkEvents.lNetworkEvents * FD_WRITE)
+		if (NetworkEvents.lNetworkEvents & FD_WRITE)
 		{
 			int SendBytes = send(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, PACKET_SIZE, 0);
 			if (SendBytes > 0)
