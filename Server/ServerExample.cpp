@@ -7,15 +7,23 @@
 #define PORT 8282 // 임의의 포트
 #define PACKET_SIZE 1024 // 임의
 
+typedef struct SOCKET_DATA
+{
+	int header; // 0~7 bit checksum , 8~23bit data length, 24~31 bit data type
+	char Message[512];
+}DATA;
+
+
 typedef struct SOCKET_INFO
 {
 	SOCKET socket;
-	char messageBuffer[PACKET_SIZE];
+	DATA message;
 	int receiveBytes;
 	int sendBytes;
 } SOCKET_INFO;
 
 void Set_SOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr);
+void Set_Data(DATA* Socket_data, char flag, short data_size);
 
 int main(void)
 {
@@ -170,7 +178,7 @@ int main(void)
 		}
 		if (NetworkEvents.lNetworkEvents & FD_WRITE)
 		{
-			int SendBytes = send(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, PACKET_SIZE, 0);
+			int SendBytes = send(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
 			if (SendBytes > 0)
 			{
 				printf("TRACE - Send Message : %s (%d bytes)\n", MessageBuffer, SendBytes);
@@ -220,4 +228,11 @@ void Set_SOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr)
 	sock_addr->sin_family = family;
 	sock_addr->sin_port = htons(port);
 	sock_addr->sin_addr.S_un.S_addr = htonl(addr);
+}
+void Set_Data(DATA* Socket_data, char flag, short data_size, char arr[])
+{
+	Socket_data->header = Socket_data->header & 157;	// checksum
+	Socket_data->header = Socket_data->header & (flag << 24);
+	Socket_data->header = Socket_data->header & (data_size << 8);
+	memcpy(Socket_data->Message, arr, sizeof(arr));
 }
