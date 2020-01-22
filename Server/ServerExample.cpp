@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <WinSock2.h>
 #include <stdlib.h>
+#include <locale.h>
 
 #pragma comment(lib, "ws2_32")
 
@@ -24,6 +25,7 @@ typedef struct SOCKET_INFO
 
 void Set_SOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr);
 void Set_Data(DATA* Socket_data, char flag, short data_size);
+int Get_Header(char* MessageBuffer);
 
 int main(void)
 {
@@ -170,19 +172,33 @@ int main(void)
 		}
 		if (NetworkEvents.lNetworkEvents & FD_READ)
 		{
-			int receiveBytes = recv(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, PACKET_SIZE, 0);
-			if (receiveBytes > 0)
+			memset(MessageBuffer, 0, sizeof(MessageBuffer));
+			const wchar_t* ad;
+			int receiveBytes = recv(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
+			int header = Get_Header(MessageBuffer);
+			if ((header & 0xffff0000) != 3644653568)
 			{
-				printf("TRACE - Receive Message : %s (%d bytes)\n", MessageBuffer, receiveBytes);
+				printf("우리 패킷이 아님");
+			}
+			else
+			{
+				printf("플래그는 : %u\n", header & 0xffff);
+				ad = (const wchar_t*)(MessageBuffer + 4);
+				setlocale(LC_ALL, "");
+				if (receiveBytes > 0)
+				{
+					wprintf(L"TRACE - Receive Message : %s (%d bytes)\n", ad, receiveBytes - 4);
+				}
 			}
 		}
 		if (NetworkEvents.lNetworkEvents & FD_WRITE)
 		{
-			int SendBytes = send(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
+			/*int SendBytes = send(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
 			if (SendBytes > 0)
 			{
 				printf("TRACE - Send Message : %s (%d bytes)\n", MessageBuffer, SendBytes);
 			}
+			*/
 		}
 		if (NetworkEvents.lNetworkEvents & FD_CLOSE)
 		{
@@ -235,4 +251,10 @@ void Set_Data(DATA* Socket_data, char flag, short data_size, char arr[])
 	Socket_data->header = Socket_data->header & (flag << 24);
 	Socket_data->header = Socket_data->header & (data_size << 8);
 	memcpy(Socket_data->Message, arr, sizeof(arr));
+}
+int Get_Header(char* MessageBuffer)
+{
+	int header = 0;
+	header = header | (unsigned int)(MessageBuffer[0] << 24) | (unsigned int)(MessageBuffer[1] << 16) | (unsigned int)(MessageBuffer[2] << 8) | (unsigned int)(MessageBuffer[3]);
+	return header;
 }
