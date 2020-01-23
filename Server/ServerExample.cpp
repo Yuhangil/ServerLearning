@@ -2,6 +2,7 @@
 #include <WinSock2.h>
 #include <stdlib.h>
 #include <locale.h>
+#include <stdarg.h>
 
 #pragma comment(lib, "ws2_32")
 
@@ -26,6 +27,7 @@ typedef struct SOCKET_INFO
 void Set_SOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr);
 void Set_Data(DATA* Socket_data, char flag, short data_size);
 int Get_Header(char* MessageBuffer);
+void Get_Data(int buffer[], char* MessageBuffer, size_t size);
 
 int main(void)
 {
@@ -182,6 +184,7 @@ int main(void)
 			}
 			else
 			{
+				int buffer[10] = {};
 				printf("플래그는 : %u\n", header & 0xffff);
 				ad = (const wchar_t*)(MessageBuffer + 4);
 				setlocale(LC_ALL, "");
@@ -257,4 +260,21 @@ int Get_Header(char* MessageBuffer)
 	int header = 0;
 	header = header | (unsigned int)(MessageBuffer[0] << 24) | (unsigned int)(MessageBuffer[1] << 16) | (unsigned int)(MessageBuffer[2] << 8) | (unsigned int)(MessageBuffer[3]);
 	return header;
+}
+
+void Get_Data(int buffer[], char* MessageBuffer, size_t size)
+{
+	int cnt = 0;
+	int t = 0;
+	int i;
+	for (i = 0; i < strlen(MessageBuffer); i++)
+	{
+		t = t*10 + MessageBuffer[i] - '0';
+		if ((i + 1) % size == 0)
+		{
+			buffer[cnt++] = t;
+			t = 0;
+		}
+	}
+
 }
