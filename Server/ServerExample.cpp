@@ -32,10 +32,14 @@ typedef struct SOCKET_INFO
 } SOCKET_INFO;
 
 void Set_SOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr);
-void Set_Data(DATA* Socket_data, char flag, short data_size);
+void Set_Data(char* buffer, int flags, int Client_ID, SOCKET_INFO* Sockets[]);
+
 int Get_Header(char* MessageBuffer);
 void Get_Data(int buffer[], char* MessageBuffer, size_t size);
+
+void Get_PlayerData(char* MessageBuffer, SOCKET_INFO* Sockets[]);
 void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets);
+
 void Get_4Bytes(char* Buffer, void* Data, size_t Data_size);
 void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[]);
 
@@ -59,8 +63,8 @@ int main(void)
 	int iResult = 0;
 	int iIndex = 0;
 
-	char MessageBuffer[PACKET_SIZE + 1] = {};
-	char buffer[PACKET_SIZE + 1] = {};
+	char MessageBuffer[PACKET_SIZE + 1] = {};	// 클라이언트->서버 버퍼
+	char buffer[PACKET_SIZE + 1] = {};		// 서버->클라이언트 버퍼
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);		// 시작
 	if (iResult != 0)
@@ -147,6 +151,8 @@ int main(void)
 		// FD_ACCEPT : Make a socket with Accept() and bind with Event object
 		if (NetworkEvents.lNetworkEvents & FD_ACCEPT)
 		{
+			memset(buffer, 0, sizeof(buffer));
+
 			if (NetworkEvents.iErrorCode[FD_ACCEPT_BIT] != 0)
 			{
 				fprintf(stderr, "Network Accept Fail\n");
@@ -188,9 +194,11 @@ int main(void)
 				WSACleanup();
 				return 1;
 			}
-			
-			for (int i = 0; i < iIndex; i++)
+			// 새로 ACCEPT한 Client에게 ID 전달
+			Set_Data(buffer, 1, iIndex, Sockets);
+			for (int i = 1; i <= iIndex; i++)		// 0번은 server이므로 1부터 시작
 			{
+				send(Sockets[i]->socket, buffer, sizeof(buffer), 0);
 				// player가 참가했음을 전달
 			}
 			iIndex++;
@@ -215,16 +223,17 @@ int main(void)
 				printf("플래그는 : %u\n", header & 0xffff);
 				switch (header)
 				{
-				case 1:		// UpdatePlayerPos
+				case 3:		// UpdatePlayerPos
 					Get_PlayerPos(MessageBuffer+4, Sockets);
-					break;
-				case 2:
-					break;
-				case 3:
+					SendAll(buffer, sockets);
 					break;
 				case 4:
 					break;
 				case 5:
+					break;
+				case 6:
+					break;
+				case 7:
 					break;
 				}
 				ad = (const wchar_t*)(MessageBuffer + 4);
@@ -269,9 +278,10 @@ int main(void)
 				Sockets[i] = Sockets[i + 1];
 				events[i] = events[i + 1];
 			}
+			Set_Data(buffer, 2, t, Sockets);
 			for (int i = 0; i < iIndex; i++)
 			{
-				// send(Sockets[i]->socket, buffer, sizeof(buffer), 0); 플레이어가 사라졌음을 모두에게 전달
+				 send(Sockets[i]->socket, buffer, sizeof(buffer), 0);	// 플레이어가 사라졌음을 모두에게 전달
 			}
 			iIndex--;
 		}
@@ -283,18 +293,22 @@ int main(void)
 	return 0;
 }
 
+void Send_All(char* buffer, SOCKET_INFO* Sockets[], int iIndex, int Client_ID)
+{
+	int i;
+	for (i = 1; i <= iIndex; i++)
+	{
+		if (i != Client_ID)
+		{
+			send(Sockets[i]->socket, buffer, sizeof(buffer), 0);
+		}
+	}
+}
 void Set_SOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr)
 {
 	sock_addr->sin_family = family;
 	sock_addr->sin_port = htons(port);
 	sock_addr->sin_addr.S_un.S_addr = htonl(addr);
-}
-void Set_Data(DATA* Socket_data, char flag, short data_size, char arr[])
-{
-	Socket_data->header = Socket_data->header & 157;	// checksum
-	Socket_data->header = Socket_data->header & (flag << 24);
-	Socket_data->header = Socket_data->header & (data_size << 8);
-	memcpy(Socket_data->Message, arr, sizeof(arr));
 }
 int BTI(char* Buffer)
 {
@@ -313,9 +327,38 @@ int Get_Header(char* MessageBuffer)
 	return header;
 }
 
-int Set_Header()
+int Set_Header(int flags)
 {
+	int header = 0;
+	char arr[4] = {0xD9, 0x3D, flags& 0xFF, (flags>>8) & 0xFF};
+	memcpy(&header, arr, sizeof(arr));
+	return header;
+}
 
+void Set_Data(char* buffer, int flags, int Client_ID, SOCKET_INFO* Sockets[])
+{
+	int header = Set_Header(flags);
+
+	memcpy(buffer, &header, sizeof(header));
+	memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
+	if (flags == 1)		// connection 클라이언트에게 자신의 id번호를 전달
+	{
+	}
+	else if (flags == 2)	// CLIENT_ID 클라이언트의 종료로 인해 다른 클라이언트에게 종료를 알림
+	{
+	}
+	else if (flags == 3)
+	{
+		memcpy(buffer + 8, &Sockets[Client_ID]->P_DATA.x, sizeof(Sockets[Client_ID]->P_DATA.x));
+		memcpy(buffer + 12, &Sockets[Client_ID]->P_DATA.y, sizeof(Sockets[Client_ID]->P_DATA.y));
+	}
+}
+
+void Get_PlayerData(char* MessageBuffer, SOCKET_INFO* Sockets[])
+{
+	int client_id = 0;
+	Get_4Bytes(MessageBuffer, &client_id, sizeof(client_id));
+	Get_4Bytes(MessageBuffer + 4, &(Sockets[client_id]->P_DATA.playername), sizeof(Sockets[client_id]->P_DATA.playername));
 }
 void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[])
 {
