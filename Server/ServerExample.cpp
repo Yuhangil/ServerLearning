@@ -15,19 +15,29 @@ typedef struct SOCKET_DATA
 	char Message[512];
 }DATA;
 
-
+typedef struct PLAYER_DATA
+{
+	char playername[31];
+	int client_id;
+	float x, y;
+}PLAYER_DATA;
 typedef struct SOCKET_INFO
 {
 	SOCKET socket;
 	DATA message;
 	int receiveBytes;
 	int sendBytes;
+	PLAYER_DATA P_DATA;
+
 } SOCKET_INFO;
 
 void Set_SOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr);
 void Set_Data(DATA* Socket_data, char flag, short data_size);
 int Get_Header(char* MessageBuffer);
 void Get_Data(int buffer[], char* MessageBuffer, size_t size);
+void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets);
+void Get_4Bytes(char* Buffer, void* Data, size_t Data_size);
+void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[]);
 
 int main(void)
 {
@@ -49,7 +59,8 @@ int main(void)
 	int iResult = 0;
 	int iIndex = 0;
 
-	char MessageBuffer[PACKET_SIZE + 1];
+	char MessageBuffer[PACKET_SIZE + 1] = {};
+	char buffer[PACKET_SIZE + 1] = {};
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);		// 시작
 	if (iResult != 0)
@@ -113,6 +124,9 @@ int main(void)
 	
 	while (1)
 	{
+
+
+
 		int iEventIndex = WSAWaitForMultipleEvents(iIndex, events, FALSE, WSA_INFINITE, FALSE);
 		if (iEventIndex == WSA_WAIT_FAILED)
 		{
@@ -126,6 +140,9 @@ int main(void)
 			fprintf(stderr, "Event Type Error\n");
 			break;
 		}
+
+
+
 
 		// FD_ACCEPT : Make a socket with Accept() and bind with Event object
 		if (NetworkEvents.lNetworkEvents & FD_ACCEPT)
@@ -151,7 +168,8 @@ int main(void)
 
 			Sockets[iIndex] = (SOCKET_INFO*)calloc(1, sizeof(SOCKET_INFO));
 			Sockets[iIndex]->socket = hClient;
-
+			Sockets[iIndex]->P_DATA.client_id = iIndex;
+			
 			events[iIndex] = WSACreateEvent();
 			if (events[iIndex] == WSA_INVALID_EVENT)
 			{
@@ -170,10 +188,19 @@ int main(void)
 				WSACleanup();
 				return 1;
 			}
+			
+			for (int i = 0; i < iIndex; i++)
+			{
+				// player가 참가했음을 전달
+			}
 			iIndex++;
 		}
+
+
 		if (NetworkEvents.lNetworkEvents & FD_READ)
 		{
+			int buffer[10];
+			memset(buffer, 0, sizeof(buffer));
 			memset(MessageBuffer, 0, sizeof(MessageBuffer));
 			const wchar_t* ad;
 			int receiveBytes = recv(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
@@ -186,6 +213,20 @@ int main(void)
 			{
 				int buffer[10] = {};
 				printf("플래그는 : %u\n", header & 0xffff);
+				switch (header)
+				{
+				case 1:		// UpdatePlayerPos
+					Get_PlayerPos(MessageBuffer+4, Sockets);
+					break;
+				case 2:
+					break;
+				case 3:
+					break;
+				case 4:
+					break;
+				case 5:
+					break;
+				}
 				ad = (const wchar_t*)(MessageBuffer + 4);
 				setlocale(LC_ALL, "");
 				if (receiveBytes > 0)
@@ -194,6 +235,8 @@ int main(void)
 				}
 			}
 		}
+
+
 		if (NetworkEvents.lNetworkEvents & FD_WRITE)
 		{
 			/*int SendBytes = send(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
@@ -203,8 +246,11 @@ int main(void)
 			}
 			*/
 		}
+
+
 		if (NetworkEvents.lNetworkEvents & FD_CLOSE)
 		{
+			int t = Sockets[iEventIndex - WSA_WAIT_EVENT_0]->P_DATA.client_id;
 			closesocket(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket);
 
 			free((void*)Sockets[iEventIndex - WSA_WAIT_EVENT_0]);
@@ -223,20 +269,15 @@ int main(void)
 				Sockets[i] = Sockets[i + 1];
 				events[i] = events[i + 1];
 			}
+			for (int i = 0; i < iIndex; i++)
+			{
+				// send(Sockets[i]->socket, buffer, sizeof(buffer), 0); 플레이어가 사라졌음을 모두에게 전달
+			}
 			iIndex--;
 		}
 
 	}
 
-	////////////////////////////////////////////////////
-
-
-
-	// 메시지 전달부
-
-
-
-	/////////////////////////////////////////////////////
 	closesocket(hListen);
 	WSACleanup();		// 소켓 종료
 	return 0;
@@ -255,26 +296,75 @@ void Set_Data(DATA* Socket_data, char flag, short data_size, char arr[])
 	Socket_data->header = Socket_data->header & (data_size << 8);
 	memcpy(Socket_data->Message, arr, sizeof(arr));
 }
+int BTI(char* Buffer)
+{
+	int t = 0;
+	t = t | (unsigned int)(Buffer[0] << 24) | (unsigned int)(Buffer[1] << 16) | (unsigned int)(Buffer[2] << 8) | (unsigned int)(Buffer[3]);
+	return t;
+}
+void Get_4Bytes(char* Buffer, void* Data, size_t Data_size)
+{
+	memcpy(Data, Buffer, Data_size);
+}
 int Get_Header(char* MessageBuffer)
 {
 	int header = 0;
-	header = header | (unsigned int)(MessageBuffer[0] << 24) | (unsigned int)(MessageBuffer[1] << 16) | (unsigned int)(MessageBuffer[2] << 8) | (unsigned int)(MessageBuffer[3]);
+	Get_4Bytes(MessageBuffer, &header, sizeof(header));
 	return header;
 }
 
-void Get_Data(int buffer[], char* MessageBuffer, size_t size)
+int Set_Header()
 {
-	int cnt = 0;
-	int t = 0;
-	int i;
-	for (i = 0; i < strlen(MessageBuffer); i++)
-	{
-		t = t*10 + MessageBuffer[i] - '0';
-		if ((i + 1) % size == 0)
-		{
-			buffer[cnt++] = t;
-			t = 0;
-		}
-	}
 
 }
+void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[])
+{
+	int client_id = 0;
+	Get_4Bytes(MessageBuffer, &client_id, sizeof(client_id));
+	Get_4Bytes(MessageBuffer + 4, &(Sockets[client_id]->P_DATA.x), sizeof(Sockets[client_id]->P_DATA.x));
+	Get_4Bytes(MessageBuffer + 8, &(Sockets[client_id]->P_DATA.y), sizeof(Sockets[client_id]->P_DATA.y));
+}
+void Get_Connection(char* MessageBuffer, SOCKET_INFO* Sockets[])
+{
+	int client_id = 0;
+	Get_4Bytes(MessageBuffer, &client_id, sizeof(client_id));
+	Get_4Bytes(MessageBuffer + 4, &(Sockets[client_id]->P_DATA.playername), sizeof(Sockets[client_id]->P_DATA.playername));
+}
+/*
+
+패킷 종류
+Connection:
+   int client_id
+   str player_nickname
+
+PlayerPos:
+   int client_id
+   float x
+   float y
+
+Structure Construct:
+   int client_id
+   int structure_id
+   float structure_x
+   float structure_y
+
+Disconnection:
+   int client_id
+
+접속 흐름:
+C1 -> S [Connection(c1)]: 접속 요청
+
+S -> C1 [Connection(c1)]: 접속 허락
+S -> C_Other [Connection(c1)]: C1 접속 알림
+S -> C1 [Connection(c_others)]: C1에게 다른 클라정보 전달
+C_Other: C1 추가
+C1: C_Other들에 대한 패킷 받고 추가
+
+
+종료 흐름:
+C1 -> S [Disconnection(c1)]: 종료
+
+S: C1을 클라이언트 리스트에서 삭제
+S -> C_All [Disconnection(c1)]: 다른 클라에게 C1의 접속 해제를 알림
+C_All: C1을 게임에서 삭제
+*/
