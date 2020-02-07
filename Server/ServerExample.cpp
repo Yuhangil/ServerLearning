@@ -43,6 +43,8 @@ void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets);
 void Get_4Bytes(char* Buffer, void* Data, size_t Data_size);
 void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[]);
 
+void Send_All(char* buffer, SOCKET_INFO* Sockets[], int iIndex, int Client_ID);
+
 int main(void)
 {
 	WSADATA wsaData = {};
@@ -72,7 +74,10 @@ int main(void)
 		fprintf(stderr, "WSAStartup Failed with Error : %d\n", iResult);
 		return 1;
 	}
+	printf("WSAStartup() OK!\n");
+
 	
+
 	hListen = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);	// IPV4 type tcp protocol
 	if (hListen == INVALID_SOCKET)
 	{
@@ -80,10 +85,14 @@ int main(void)
 		WSACleanup();
 		return 1;
 	}
+	printf("Socket() OK!\n");
+
 
 	Set_SOCKADDR(&tListenAddr, AF_INET, PORT, INADDR_ANY);
 
+
 	iResult = bind(hListen, (SOCKADDR*)& tListenAddr, sizeof(tListenAddr));
+
 
 	if (iResult == SOCKET_ERROR)
 	{
@@ -92,7 +101,10 @@ int main(void)
 		WSACleanup();
 		return 1;
 	}
+	printf("Socket Bind OK!\n");
+	
 	iResult = listen(hListen, SOMAXCONN);
+
 
 	if (iResult == SOCKET_ERROR)
 	{
@@ -101,10 +113,14 @@ int main(void)
 		WSACleanup();
 		return 1;
 	}
+	printf("Socket Listen OK!\n");
+
+
 
 	SocketInfo = (struct SOCKET_INFO*)calloc(1, sizeof(SOCKET_INFO));
 	SocketInfo->socket = hListen;
 	Sockets[iIndex] = SocketInfo;
+
 
 	events[iIndex] = WSACreateEvent();
 	if (events[iIndex] == WSA_INVALID_EVENT)
@@ -114,6 +130,9 @@ int main(void)
 		WSACleanup();
 		return 1;
 	}
+	printf("WSACreateEvent() OK!\n");
+
+
 
 	if (WSAEventSelect(hListen, events[iIndex], FD_ACCEPT | FD_CLOSE) == SOCKET_ERROR)
 	{
@@ -122,6 +141,7 @@ int main(void)
 		WSACleanup();
 		return 1;
 	}
+	printf("WSAEventSelect OK!\n");
 
 	iIndex++;	// Index 0 is ServerSocket
 	Iaddrlen = sizeof(SOCKADDR_IN);
@@ -136,6 +156,10 @@ int main(void)
 		{
 			fprintf(stderr, "Event Wait Fail\n");
 			break;
+		}
+		else
+		{
+			printf("WSAWaitForMultipleEvents() OK!\n");
 		}
 
 		// Get Information of Event Object
@@ -186,7 +210,7 @@ int main(void)
 				return 1;
 			}
 
-			if (WSAEventSelect(hClient, events[iIndex], FD_READ | FD_WRITE) == SOCKET_ERROR)
+			if (WSAEventSelect(hClient, events[iIndex], FD_READ | FD_WRITE | FD_CLOSE) == SOCKET_ERROR)
 			{
 				fprintf(stderr, "Event Select Fail\n");
 				closesocket(hClient);
@@ -194,6 +218,7 @@ int main(void)
 				WSACleanup();
 				return 1;
 			}
+			printf("%d번 클라 입장\n", iIndex);
 			// 새로 ACCEPT한 Client에게 ID 전달
 			Set_Data(buffer, 1, iIndex, Sockets);
 			for (int i = 1; i <= iIndex; i++)		// 0번은 server이므로 1부터 시작
@@ -207,25 +232,25 @@ int main(void)
 
 		if (NetworkEvents.lNetworkEvents & FD_READ)
 		{
-			int buffer[10];
 			memset(buffer, 0, sizeof(buffer));
 			memset(MessageBuffer, 0, sizeof(MessageBuffer));
 			const wchar_t* ad;
 			int receiveBytes = recv(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
 			int header = Get_Header(MessageBuffer);
-			if ((header & 0xffff0000) != 3644653568)
+			if ((header & 0xFFFF0000) != 0xD93D0000)
 			{
 				printf("우리 패킷이 아님");
 			}
 			else
 			{
-				int buffer[10] = {};
-				printf("플래그는 : %u\n", header & 0xffff);
-				switch (header)
+				int Client_ID;
+				Get_4Bytes(MessageBuffer, &Client_ID, sizeof(Client_ID));
+				printf("플래그는 : %u\n", header & 0xFFFF);
+				switch (header & 0xFFFF)
 				{
 				case 3:		// UpdatePlayerPos
 					Get_PlayerPos(MessageBuffer+4, Sockets);
-					SendAll(buffer, sockets);
+					Send_All(buffer, Sockets, iIndex, Client_ID);
 					break;
 				case 4:
 					break;
@@ -236,12 +261,14 @@ int main(void)
 				case 7:
 					break;
 				}
+				/*
 				ad = (const wchar_t*)(MessageBuffer + 4);
 				setlocale(LC_ALL, "");
 				if (receiveBytes > 0)
 				{
 					wprintf(L"TRACE - Receive Message : %s (%d bytes)\n", ad, receiveBytes - 4);
 				}
+				*/
 			}
 		}
 
@@ -278,12 +305,14 @@ int main(void)
 				Sockets[i] = Sockets[i + 1];
 				events[i] = events[i + 1];
 			}
+			printf("%d번 클라 퇴장\n", t);
 			Set_Data(buffer, 2, t, Sockets);
+			iIndex--;
 			for (int i = 0; i < iIndex; i++)
 			{
 				 send(Sockets[i]->socket, buffer, sizeof(buffer), 0);	// 플레이어가 사라졌음을 모두에게 전달
 			}
-			iIndex--;
+			
 		}
 
 	}
@@ -322,15 +351,25 @@ void Get_4Bytes(char* Buffer, void* Data, size_t Data_size)
 }
 int Get_Header(char* MessageBuffer)
 {
+	char buff[4] = {};
 	int header = 0;
-	Get_4Bytes(MessageBuffer, &header, sizeof(header));
+	int t = 0;
+	Get_4Bytes(MessageBuffer, buff, sizeof(buff));
+	t = buff[0];
+	buff[0] = buff[3];
+	buff[3] = t;
+	t = buff[1];
+	buff[1] = buff[2];
+	buff[2] = t;
+	Get_4Bytes(buff, &header, sizeof(header));
+	printf("%x\n", header);
 	return header;
 }
 
 int Set_Header(int flags)
 {
 	int header = 0;
-	char arr[4] = {0xD9, 0x3D, flags& 0xFF, (flags>>8) & 0xFF};
+	char arr[4] = { flags& 0xFF , (flags >> 8 ) & 0xFF, 0x3D, 0xD9 };
 	memcpy(&header, arr, sizeof(arr));
 	return header;
 }
