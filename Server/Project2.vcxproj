@@ -122,10 +122,12 @@
     <ClCompile Include="Data_Util.cpp" />
     <ClCompile Include="ServerMain.cpp" />
     <ClCompile Include="ServerSocket.cpp" />
+    <ClCompile Include="ThreadUitl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Data_Util.h" />
     <ClInclude Include="ServerSocket.h" />
+    <ClInclude Include="ThreadUtil.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

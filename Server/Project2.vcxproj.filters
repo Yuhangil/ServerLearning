@@ -24,12 +24,18 @@
     <ClCompile Include="ServerMain.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="ThreadUitl.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Data_Util.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
     <ClInclude Include="ServerSocket.h">
+      <Filter>소스 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadUtil.h">
       <Filter>소스 파일</Filter>
     </ClInclude>
   </ItemGroup>
