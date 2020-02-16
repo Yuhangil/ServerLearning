@@ -1,9 +1,10 @@
 #include "Data_Util.h"
 #include "ServerSocket.h"
+#include "ThreadUtil.h"
 #include <locale.h>
 
 
-
+extern HANDLE hMutex;
 
 int main(void)
 {
@@ -159,7 +160,7 @@ int main(void)
 			Sockets[iIndex] = (SOCKET_INFO*)calloc(1, sizeof(SOCKET_INFO));
 			Sockets[iIndex]->socket = hClient;
 			Sockets[iIndex]->P_DATA.client_id = iIndex;
-			
+			Sockets[iIndex]->last_send = clock();
 			events[iIndex] = WSACreateEvent();
 			if (events[iIndex] == WSA_INVALID_EVENT)
 			{
@@ -197,6 +198,7 @@ int main(void)
 			const wchar_t* ad;
 			int receiveBytes = recv(Sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
 			int header = Get_Header(MessageBuffer);
+			
 			if ((header & 0xFFFF0000) != 0xD93D0000)
 			{
 				printf("우리 패킷이 아님");
@@ -205,6 +207,7 @@ int main(void)
 			{
 				int Client_ID;
 				Get_4Bytes(MessageBuffer, &Client_ID, sizeof(Client_ID));
+				Sockets[Client_ID]->last_send = clock();
 				printf("플래그는 : %u\n", header & 0xFFFF);
 				switch (header & 0xFFFF)
 				{

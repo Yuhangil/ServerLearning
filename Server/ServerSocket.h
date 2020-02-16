@@ -1,5 +1,6 @@
 #pragma once
 #include <WinSock2.h>
+#include <time.h>
 
 #pragma comment(lib, "ws2_32")
 
@@ -24,6 +25,7 @@ typedef struct SOCKET_INFO
 	DATA message;
 	int receiveBytes;
 	int sendBytes;
+	clock_t last_send;
 	PLAYER_DATA P_DATA;
 
 } SOCKET_INFO;
@@ -31,3 +33,4 @@ typedef struct SOCKET_INFO
 
 void Send_All(char* buffer, SOCKET_INFO* Sockets[], int iIndex, int Client_ID);
 void Set_SOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr);
+void TimeOut(SOCKET_INFO* Sockets[]);
