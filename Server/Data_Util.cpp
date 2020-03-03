@@ -35,17 +35,23 @@ void Set_Data(char* buffer, int flags, int Client_ID, SOCKET_INFO* Sockets[])
 	int header = Set_Header(flags);
 
 	memcpy(buffer, &header, sizeof(header));
-	memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
 	if (flags == 1)		// connection 클라이언트에게 자신의 id번호를 전달
 	{
+		memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
 	}
 	else if (flags == 2)	// CLIENT_ID 클라이언트의 종료로 인해 다른 클라이언트에게 종료를 알림
 	{
+		memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
 	}
 	else if (flags == 3)
 	{
+		memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
 		memcpy(buffer + 8, &Sockets[Client_ID]->P_DATA.x, sizeof(Sockets[Client_ID]->P_DATA.x));
 		memcpy(buffer + 12, &Sockets[Client_ID]->P_DATA.y, sizeof(Sockets[Client_ID]->P_DATA.y));
+	}
+	else if (flags == 4)
+	{
+		// memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
 	}
 }
 
