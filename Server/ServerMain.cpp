@@ -187,6 +187,12 @@ int main(void)
 				send(Sockets[i]->socket, buffer, sizeof(buffer), 0);
 				// player가 참가했음을 전달
 			}
+			for (int i = 1; i < iIndex; i++)
+			{
+				memset(buffer, 0, sizeof(buffer));
+				Set_Data(buffer, 1, i, Sockets);
+				send(Sockets[iIndex]->socket, buffer, sizeof(buffer), 0);
+			}
 			iIndex++;
 		}
 
