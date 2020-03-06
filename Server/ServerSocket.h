@@ -20,6 +20,13 @@ typedef struct PLAYER_DATA
 	float x, y, z;
 	float dx, dy, dz;
 }PLAYER_DATA;
+
+typedef struct STRUCTURE_DATA
+{
+	unsigned int structure_id;
+	float x, y;
+}STRUCTURE_DATA;
+
 typedef struct SOCKET_INFO
 {
 	SOCKET socket;

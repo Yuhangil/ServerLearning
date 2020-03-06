@@ -13,7 +13,6 @@ int main(void)
 	WSAEVENT events[WSA_MAXIMUM_WAIT_EVENTS];
 	WSANETWORKEVENTS NetworkEvents;
 
-
 	SOCKET_INFO* SocketInfo;
 	SOCKET_INFO* Sockets[WSA_MAXIMUM_WAIT_EVENTS];
 
@@ -107,6 +106,8 @@ int main(void)
 
 	iIndex++;	// Index 0 is ServerSocket
 	Iaddrlen = sizeof(SOCKADDR_IN);
+
+
 	
 	while (1)
 	{
@@ -121,7 +122,7 @@ int main(void)
 		}
 		else
 		{
-			printf("WSAWaitForMultipleEvents() OK!\n");
+			//printf("WSAWaitForMultipleEvents() OK!\n");
 		}
 
 		// Get Information of Event Object
@@ -213,13 +214,14 @@ int main(void)
 			else
 			{
 				int Client_ID = iEventIndex - WSA_WAIT_EVENT_0;;
-				printf("%d\n", Client_ID);
+				//printf("%d\n", Client_ID);
 				Sockets[Client_ID]->last_send = clock();
-				printf("플래그는 : %u\n", header & 0xFF);
+				//printf("플래그는 : %u\n", header & 0xFF);
 				switch (header & 0xFFFF)
 				{
 				case 3:		// UpdatePlayerPos
 					Get_PlayerPos(MessageBuffer + 8, Sockets, Client_ID);
+					printf("%.3f %.3f %.3f\n",Sockets[Client_ID]->P_DATA.x, Sockets[Client_ID]->P_DATA.y, Sockets[Client_ID]->P_DATA.z);
 					Set_Data(buffer, sizeof(buffer), 3, Client_ID, Sockets);
 					Send_All(buffer, sizeof(buffer), Sockets, iIndex, Client_ID);
 					break;
