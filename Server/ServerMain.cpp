@@ -27,7 +27,7 @@ int main(void)
 	int iResult = 0;
 	int iIndex = 0;
 
-	char MessageBuffer[PACKET_SIZE + 1] = {};	// 클라이언트->서버 버퍼
+	char MessageBuffer[PACKET_SIZE] = {};	// 클라이언트->서버 버퍼
 	char buffer[PACKET_SIZE] = {};		// 서버->클라이언트 버퍼
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);		// 시작
@@ -208,19 +208,22 @@ int main(void)
 			
 			if ((header & 0xFFFF0000) != 0xD93D0000)
 			{
-				printf("우리 패킷이 아님");
+				printf("우리 패킷이 아님 %x\n", header);
 			}
 			else
 			{
-				int Client_ID;
-				Get_4Bytes(MessageBuffer, &Client_ID, sizeof(Client_ID));
+				int Client_ID = iEventIndex - WSA_WAIT_EVENT_0;;
+				printf("%d\n", Client_ID);
 				Sockets[Client_ID]->last_send = clock();
-				printf("플래그는 : %u\n", header & 0xFFFF);
+				printf("플래그는 : %u\n", header & 0xFF);
+				puts("여기까진 옴");
 				switch (header & 0xFFFF)
 				{
 				case 3:		// UpdatePlayerPos
-					Get_PlayerPos(MessageBuffer+4, Sockets);
-					Send_All(buffer, Sockets, iIndex, Client_ID);
+					puts("여기까지도 옴");
+					Get_PlayerPos(MessageBuffer+8, Sockets, Client_ID);
+					Set_Data(buffer, 3, Client_ID, Sockets);
+					// Send_All(buffer, Sockets, iIndex, Client_ID);
 					break;
 				case 4:
 					break;

@@ -18,7 +18,6 @@ int Get_Header(char* MessageBuffer)
 	buff[1] = buff[2];
 	buff[2] = t;
 	Get_4Bytes(buff, &header, sizeof(header));
-	printf("%x\n", header);
 	return header;
 }
 
@@ -46,8 +45,8 @@ void Set_Data(char* buffer, int flags, int Client_ID, SOCKET_INFO* Sockets[])
 	else if (flags == 3)
 	{
 		memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
-		memcpy(buffer + 8, &Sockets[Client_ID]->P_DATA.x, sizeof(Sockets[Client_ID]->P_DATA.x));
-		memcpy(buffer + 12, &Sockets[Client_ID]->P_DATA.y, sizeof(Sockets[Client_ID]->P_DATA.y));
+		memcpy(buffer + 8, &((Sockets[Client_ID]->P_DATA).x), sizeof((Sockets[Client_ID]->P_DATA).x));
+		memcpy(buffer + 12, &((Sockets[Client_ID]->P_DATA).y), sizeof((Sockets[Client_ID]->P_DATA).y));
 	}
 	else if (flags == 4)
 	{
@@ -61,16 +60,10 @@ void Get_PlayerData(char* MessageBuffer, SOCKET_INFO* Sockets[])
 	Get_4Bytes(MessageBuffer, &client_id, sizeof(client_id));
 	Get_4Bytes(MessageBuffer + 4, &(Sockets[client_id]->P_DATA.playername), sizeof(Sockets[client_id]->P_DATA.playername));
 }
-void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[])
+void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[], int Client_ID)
 {
-	int client_id = 0;
-	Get_4Bytes(MessageBuffer, &client_id, sizeof(client_id));
-	Get_4Bytes(MessageBuffer + 4, &(Sockets[client_id]->P_DATA.x), sizeof(Sockets[client_id]->P_DATA.x));
-	Get_4Bytes(MessageBuffer + 8, &(Sockets[client_id]->P_DATA.y), sizeof(Sockets[client_id]->P_DATA.y));
-	Get_4Bytes(MessageBuffer + 12, &(Sockets[client_id]->P_DATA.z), sizeof(Sockets[client_id]->P_DATA.z));
-	Get_4Bytes(MessageBuffer + 16, &(Sockets[client_id]->P_DATA.dx), sizeof(Sockets[client_id]->P_DATA.dx));
-	Get_4Bytes(MessageBuffer + 20, &(Sockets[client_id]->P_DATA.dy), sizeof(Sockets[client_id]->P_DATA.dy));
-	Get_4Bytes(MessageBuffer + 24, &(Sockets[client_id]->P_DATA.dz), sizeof(Sockets[client_id]->P_DATA.dz));
+	Get_4Bytes(MessageBuffer, &((Sockets[Client_ID]->P_DATA).x), sizeof((Sockets[Client_ID]->P_DATA).x));
+	Get_4Bytes(MessageBuffer + 4, &((Sockets[Client_ID]->P_DATA).y), sizeof((Sockets[Client_ID]->P_DATA).y));
 }
 void Get_Connection(char* MessageBuffer, SOCKET_INFO* Sockets[])
 {

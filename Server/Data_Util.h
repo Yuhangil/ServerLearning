@@ -8,7 +8,7 @@ int Get_Header(char* MessageBuffer);
 void Get_Data(int buffer[], char* MessageBuffer, size_t size);
 
 void Get_PlayerData(char* MessageBuffer, SOCKET_INFO* Sockets[]);
-void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[]);
+void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[], int Client_ID);
 void Get_Connection(char* MessageBuffer, SOCKET_INFO* Sockets[]);
 
 void Get_4Bytes(char* Buffer, void* Data, size_t Data_size);
