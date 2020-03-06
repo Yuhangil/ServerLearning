@@ -67,6 +67,10 @@ void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[])
 	Get_4Bytes(MessageBuffer, &client_id, sizeof(client_id));
 	Get_4Bytes(MessageBuffer + 4, &(Sockets[client_id]->P_DATA.x), sizeof(Sockets[client_id]->P_DATA.x));
 	Get_4Bytes(MessageBuffer + 8, &(Sockets[client_id]->P_DATA.y), sizeof(Sockets[client_id]->P_DATA.y));
+	Get_4Bytes(MessageBuffer + 12, &(Sockets[client_id]->P_DATA.z), sizeof(Sockets[client_id]->P_DATA.z));
+	Get_4Bytes(MessageBuffer + 16, &(Sockets[client_id]->P_DATA.dx), sizeof(Sockets[client_id]->P_DATA.dx));
+	Get_4Bytes(MessageBuffer + 20, &(Sockets[client_id]->P_DATA.dy), sizeof(Sockets[client_id]->P_DATA.dy));
+	Get_4Bytes(MessageBuffer + 24, &(Sockets[client_id]->P_DATA.dz), sizeof(Sockets[client_id]->P_DATA.dz));
 }
 void Get_Connection(char* MessageBuffer, SOCKET_INFO* Sockets[])
 {
