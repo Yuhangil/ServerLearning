@@ -2,6 +2,7 @@
 #include "ServerSocket.h"
 #include "ThreadUtil.h"
 #include <locale.h>
+#include <Windows.h>
 
 
 extern HANDLE hMutex;
@@ -27,7 +28,7 @@ int main(void)
 	int iIndex = 0;
 
 	char MessageBuffer[PACKET_SIZE + 1] = {};	// 클라이언트->서버 버퍼
-	char buffer[PACKET_SIZE + 1] = {};		// 서버->클라이언트 버퍼
+	char buffer[PACKET_SIZE] = {};		// 서버->클라이언트 버퍼
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);		// 시작
 	if (iResult != 0)
