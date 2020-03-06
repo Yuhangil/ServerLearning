@@ -1,16 +1,16 @@
 #include "ServerSocket.h"
 #include "ThreadUtil.h"
-
+#include <stdio.h>
 extern HANDLE hMutex;
 
-void Send_All(char* buffer, SOCKET_INFO* Sockets[], int iIndex, int Client_ID)
+void Send_All(char* buffer, size_t buffersize, SOCKET_INFO* Sockets[], int iIndex, int Client_ID)
 {
 	int i;
-	for (i = 1; i <= iIndex; i++)
+	for (i = 1; i < iIndex; i++)
 	{
 		if (i != Client_ID)
 		{
-			send(Sockets[i]->socket, buffer, sizeof(buffer), 0);
+			send(Sockets[i]->socket, buffer, buffersize, 0);
 		}
 	}
 }

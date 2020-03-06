@@ -17,8 +17,7 @@ typedef struct PLAYER_DATA
 {
 	char playername[31];
 	int client_id;
-	float x, y, z;
-	float dx, dy, dz;
+	float x, y;
 }PLAYER_DATA;
 typedef struct SOCKET_INFO
 {
@@ -32,6 +31,6 @@ typedef struct SOCKET_INFO
 } SOCKET_INFO;
 
 
-void Send_All(char* buffer, SOCKET_INFO* Sockets[], int iIndex, int Client_ID);
+void Send_All(char* buffer, size_t buffersize, SOCKET_INFO* Sockets[], int iIndex, int Client_ID);
 void Set_SOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr);
 void TimeOut(SOCKET_INFO* Sockets[]);

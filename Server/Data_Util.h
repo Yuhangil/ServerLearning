@@ -14,6 +14,6 @@ void Get_Connection(char* MessageBuffer, SOCKET_INFO* Sockets[]);
 void Get_4Bytes(char* Buffer, void* Data, size_t Data_size);
 
 
-void Set_Data(char* buffer, int flags, int Client_ID, SOCKET_INFO* Sockets[]);
+void Set_Data(char* buffer, size_t buffersize, int flags, int Client_ID, SOCKET_INFO* Sockets[]);
 int Set_Header(int flags);
 

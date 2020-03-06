@@ -182,7 +182,7 @@ int main(void)
 			}
 			printf("%d번 클라 입장\n", iIndex);
 			// 새로 ACCEPT한 Client에게 ID 전달
-			Set_Data(buffer, 1, iIndex, Sockets);
+			Set_Data(buffer, sizeof(buffer), 1, iIndex, Sockets);
 			for (int i = 1; i <= iIndex; i++)		// 0번은 server이므로 1부터 시작
 			{
 				send(Sockets[i]->socket, buffer, sizeof(buffer), 0);
@@ -191,7 +191,7 @@ int main(void)
 			for (int i = 1; i < iIndex; i++)
 			{
 				memset(buffer, 0, sizeof(buffer));
-				Set_Data(buffer, 1, i, Sockets);
+				Set_Data(buffer, sizeof(buffer), 1, i, Sockets);
 				send(Sockets[iIndex]->socket, buffer, sizeof(buffer), 0);
 			}
 			iIndex++;
@@ -216,14 +216,12 @@ int main(void)
 				printf("%d\n", Client_ID);
 				Sockets[Client_ID]->last_send = clock();
 				printf("플래그는 : %u\n", header & 0xFF);
-				puts("여기까진 옴");
 				switch (header & 0xFFFF)
 				{
 				case 3:		// UpdatePlayerPos
-					puts("여기까지도 옴");
-					Get_PlayerPos(MessageBuffer+8, Sockets, Client_ID);
-					Set_Data(buffer, 3, Client_ID, Sockets);
-					// Send_All(buffer, Sockets, iIndex, Client_ID);
+					Get_PlayerPos(MessageBuffer + 8, Sockets, Client_ID);
+					Set_Data(buffer, sizeof(buffer), 3, Client_ID, Sockets);
+					Send_All(buffer, sizeof(buffer), Sockets, iIndex, Client_ID);
 					break;
 				case 4:
 					break;
@@ -279,7 +277,7 @@ int main(void)
 				events[i] = events[i + 1];
 			}
 			printf("%d번 클라 퇴장\n", t);
-			Set_Data(buffer, 2, t, Sockets);
+			Set_Data(buffer, sizeof(buffer), 2, t, Sockets);
 			iIndex--;
 			for (int i = 0; i < iIndex; i++)
 			{
