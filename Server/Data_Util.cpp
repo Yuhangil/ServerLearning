@@ -47,6 +47,10 @@ void Set_Data(char* buffer, size_t buffersize, int flags, int Client_ID, SOCKET_
 		memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
 		memcpy(buffer + 8, &((Sockets[Client_ID]->P_DATA).x), sizeof((Sockets[Client_ID]->P_DATA).x));
 		memcpy(buffer + 12, &((Sockets[Client_ID]->P_DATA).y), sizeof((Sockets[Client_ID]->P_DATA).y));
+		memcpy(buffer + 16, &((Sockets[Client_ID]->P_DATA).z), sizeof((Sockets[Client_ID]->P_DATA).z));
+		memcpy(buffer + 20, &((Sockets[Client_ID]->P_DATA).dx), sizeof((Sockets[Client_ID]->P_DATA).dx));
+		memcpy(buffer + 24, &((Sockets[Client_ID]->P_DATA).dy), sizeof((Sockets[Client_ID]->P_DATA).dy));
+		memcpy(buffer + 28, &((Sockets[Client_ID]->P_DATA).dz), sizeof((Sockets[Client_ID]->P_DATA).dz));
 	}
 	else if (flags == 4)
 	{
@@ -64,6 +68,10 @@ void Get_PlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[], int Client_ID)
 {
 	Get_4Bytes(MessageBuffer, &((Sockets[Client_ID]->P_DATA).x), sizeof((Sockets[Client_ID]->P_DATA).x));
 	Get_4Bytes(MessageBuffer + 4, &((Sockets[Client_ID]->P_DATA).y), sizeof((Sockets[Client_ID]->P_DATA).y));
+	Get_4Bytes(MessageBuffer + 8, &((Sockets[Client_ID]->P_DATA).z), sizeof((Sockets[Client_ID]->P_DATA).z));
+	Get_4Bytes(MessageBuffer + 12, &((Sockets[Client_ID]->P_DATA).dx), sizeof((Sockets[Client_ID]->P_DATA).dx));
+	Get_4Bytes(MessageBuffer + 16, &((Sockets[Client_ID]->P_DATA).dy), sizeof((Sockets[Client_ID]->P_DATA).dy));
+	Get_4Bytes(MessageBuffer + 20, &((Sockets[Client_ID]->P_DATA).dz), sizeof((Sockets[Client_ID]->P_DATA).dz));
 }
 void Get_Connection(char* MessageBuffer, SOCKET_INFO* Sockets[])
 {

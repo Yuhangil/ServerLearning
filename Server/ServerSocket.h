@@ -17,7 +17,8 @@ typedef struct PLAYER_DATA
 {
 	char playername[31];
 	int client_id;
-	float x, y;
+	float x, y, z;
+	float dx, dy, dz;
 }PLAYER_DATA;
 typedef struct SOCKET_INFO
 {
