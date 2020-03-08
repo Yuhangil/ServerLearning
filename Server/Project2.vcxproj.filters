@@ -13,30 +13,42 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="01. Server">
+      <UniqueIdentifier>{4835cdd2-c198-45fb-9bdf-8b17239f2146}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="02. Util">
+      <UniqueIdentifier>{495d991d-4353-433a-b056-b4d0e11d27b2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Data_Util.cpp">
+    <ClCompile Include="Core.cpp">
+      <Filter>01. Server</Filter>
+    </ClCompile>
+    <ClCompile Include="DataUtil.cpp">
+      <Filter>02. Util</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="ServerSocket.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="ServerMain.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="ThreadUitl.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="ThreadUtil.cpp">
+      <Filter>02. Util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Data_Util.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Types.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="ServerSocket.h">
-      <Filter>소스 파일</Filter>
+    <ClInclude Include="Core.h">
+      <Filter>01. Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Server.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DataUtil.h">
+      <Filter>02. Util</Filter>
     </ClInclude>
     <ClInclude Include="ThreadUtil.h">
-      <Filter>소스 파일</Filter>
+      <Filter>02. Util</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

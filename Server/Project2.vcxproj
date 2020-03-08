@@ -119,15 +119,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Data_Util.cpp" />
-    <ClCompile Include="ServerMain.cpp" />
-    <ClCompile Include="ServerSocket.cpp" />
-    <ClCompile Include="ThreadUitl.cpp" />
+    <ClCompile Include="DataUtil.cpp" />
+    <ClCompile Include="Core.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="ThreadUtil.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Data_Util.h" />
-    <ClInclude Include="ServerSocket.h" />
+    <ClInclude Include="DataUtil.h" />
+    <ClInclude Include="Core.h" />
+    <ClInclude Include="Server.h" />
     <ClInclude Include="ThreadUtil.h" />
+    <ClInclude Include="Types.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
