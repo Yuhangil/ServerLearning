@@ -19,6 +19,9 @@
     <Filter Include="02. Util">
       <UniqueIdentifier>{495d991d-4353-433a-b056-b4d0e11d27b2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="03. World">
+      <UniqueIdentifier>{2cb2a241-d90b-424b-9af4-c6fc97cff39e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.cpp">
@@ -32,6 +35,12 @@
     </ClCompile>
     <ClCompile Include="ThreadUtil.cpp">
       <Filter>02. Util</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>03. World</Filter>
+    </ClCompile>
+    <ClCompile Include="Chunk.cpp">
+      <Filter>03. World</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -49,6 +58,12 @@
     </ClInclude>
     <ClInclude Include="ThreadUtil.h">
       <Filter>02. Util</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>03. World</Filter>
+    </ClInclude>
+    <ClInclude Include="Chunk.h">
+      <Filter>03. World</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

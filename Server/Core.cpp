@@ -12,10 +12,21 @@ CCore::CCore() :
 
 CCore::~CCore()
 {
+	delete world;
 }
+
 
 bool CCore::Init()
 {
+	// 게임 정보 초기화
+	world = new CWorld();
+	if (world == NULL)
+	{
+		puts("Create World Failed");
+		return false;
+	}
+
+	// 서버 소켓 초기화
 	WSADATA wsaData = {};
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);		// 시작
 	if (iResult != 0)
@@ -201,29 +212,59 @@ int CCore::Listen()
 			memset(buffer, 0, sizeof(buffer));
 			memset(MessageBuffer, 0, sizeof(MessageBuffer));
 			const wchar_t* ad;
-			int receiveBytes = recv(m_sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
-			int header = CDataUtil::GetHeader(MessageBuffer);
+			int iReceiveBytes = recv(m_sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
+			int iHeader = CDataUtil::GetHeader(MessageBuffer);
 
-			if ((header & 0xFFFF0000) != 0xD93D0000)
+			if ((iHeader & 0xFFFF0000) != 0xD93D0000)
 			{
-				printf("우리 패킷이 아님 %x\n", header);
+				printf("우리 패킷이 아님 %x\n", iHeader);
 			}
 			else
 			{
-				int Client_ID = iEventIndex - WSA_WAIT_EVENT_0;;
+				int iClientID = iEventIndex - WSA_WAIT_EVENT_0;
 				//printf("%d\n", Client_ID);
-				m_sockets[Client_ID]->last_send = clock();
+				m_sockets[iClientID]->last_send = clock();
 				//printf("플래그는 : %u\n", header & 0xFF);
-				switch (header & 0xFFFF)
+				switch (iHeader & 0xFFFF)
 				{
 				case 3:		// UpdatePlayerPos
-					CDataUtil::GetPlayerPos(MessageBuffer + 8, m_sockets, Client_ID);
-					printf("%.3f %.3f %.3f\n", m_sockets[Client_ID]->P_DATA.x, m_sockets[Client_ID]->P_DATA.y, m_sockets[Client_ID]->P_DATA.z);
-					CDataUtil::SetData(buffer, sizeof(buffer), 3, Client_ID, m_sockets);
-					Send_All(buffer, sizeof(buffer), Client_ID);
+					CDataUtil::GetPlayerPos(MessageBuffer + 8, m_sockets, iClientID);
+					CDataUtil::SetData(buffer, sizeof(buffer), 3, iClientID, m_sockets);
+					Send_All(buffer, sizeof(buffer), iClientID);
 					break;
-				case 4:
+				case 4: 
+				{
+					unsigned int iStructureID;
+					VECTOR_INT tPos;
+					_SIZE size;
+					CDataUtil::Get4Bytes(MessageBuffer + 8, &iStructureID, sizeof(iStructureID));
+					CDataUtil::Get4Bytes(MessageBuffer + 12, &tPos.x, sizeof(tPos.x));
+					CDataUtil::Get4Bytes(MessageBuffer + 16, &tPos.z, sizeof(tPos.z));
+					CDataUtil::Get4Bytes(MessageBuffer + 20, &size.x, sizeof(size.x));
+					CDataUtil::Get4Bytes(MessageBuffer + 24, &size.z, sizeof(size.z));
+
+					printf("%u %d %d %d %d\n", iStructureID, tPos.x, tPos.z, size.x, size.z);
+
+					if (world->AddStructure({ iStructureID, tPos, size }))
+					{
+						memset(buffer, 0, sizeof(buffer));
+						int header = CDataUtil::SetHeader(4);
+
+						memcpy(buffer, &header, sizeof(header));
+						memcpy(buffer + sizeof(header), &iClientID, sizeof(iClientID));
+						memcpy(buffer + 8, &iStructureID, sizeof(iStructureID));
+						memcpy(buffer + 12, &tPos.x, sizeof(tPos.x));
+						memcpy(buffer + 16, &tPos.z, sizeof(tPos.z));
+						send(m_sockets[iClientID]->socket, buffer, sizeof(buffer), 0);
+						Send_All(buffer, sizeof(buffer), iClientID);
+					}
+					else
+					{
+
+					}
+
 					break;
+				}
 				case 5:
 					break;
 				case 6:

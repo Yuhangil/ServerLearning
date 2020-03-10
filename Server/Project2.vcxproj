@@ -119,17 +119,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Chunk.cpp" />
+    <ClCompile Include="World.cpp" />
     <ClCompile Include="DataUtil.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ThreadUtil.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Chunk.h" />
     <ClInclude Include="DataUtil.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="ThreadUtil.h" />
     <ClInclude Include="Types.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

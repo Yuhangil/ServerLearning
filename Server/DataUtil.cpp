@@ -30,12 +30,12 @@ void CDataUtil::GetPlayerData(char* MessageBuffer, SOCKET_INFO* Sockets[])
 
 void CDataUtil::GetPlayerPos(char* MessageBuffer, SOCKET_INFO* Sockets[], int Client_ID)
 {
-	Get4Bytes(MessageBuffer, &((Sockets[Client_ID]->P_DATA).x), sizeof((Sockets[Client_ID]->P_DATA).x));
-	Get4Bytes(MessageBuffer + 4, &((Sockets[Client_ID]->P_DATA).y), sizeof((Sockets[Client_ID]->P_DATA).y));
-	Get4Bytes(MessageBuffer + 8, &((Sockets[Client_ID]->P_DATA).z), sizeof((Sockets[Client_ID]->P_DATA).z));
-	Get4Bytes(MessageBuffer + 12, &((Sockets[Client_ID]->P_DATA).dx), sizeof((Sockets[Client_ID]->P_DATA).dx));
-	Get4Bytes(MessageBuffer + 16, &((Sockets[Client_ID]->P_DATA).dy), sizeof((Sockets[Client_ID]->P_DATA).dy));
-	Get4Bytes(MessageBuffer + 20, &((Sockets[Client_ID]->P_DATA).dz), sizeof((Sockets[Client_ID]->P_DATA).dz));
+	Get4Bytes(MessageBuffer, &((Sockets[Client_ID]->P_DATA).pos.x), sizeof((Sockets[Client_ID]->P_DATA).pos.x));
+	Get4Bytes(MessageBuffer + 4, &((Sockets[Client_ID]->P_DATA).pos.y), sizeof((Sockets[Client_ID]->P_DATA).pos.y));
+	Get4Bytes(MessageBuffer + 8, &((Sockets[Client_ID]->P_DATA).pos.z), sizeof((Sockets[Client_ID]->P_DATA).pos.z));
+	Get4Bytes(MessageBuffer + 12, &((Sockets[Client_ID]->P_DATA).velocity.x), sizeof((Sockets[Client_ID]->P_DATA).velocity.x));
+	Get4Bytes(MessageBuffer + 16, &((Sockets[Client_ID]->P_DATA).velocity.y), sizeof((Sockets[Client_ID]->P_DATA).velocity.y));
+	Get4Bytes(MessageBuffer + 20, &((Sockets[Client_ID]->P_DATA).velocity.z), sizeof((Sockets[Client_ID]->P_DATA).velocity.z));
 }
 
 void CDataUtil::GetConnection(char* MessageBuffer, SOCKET_INFO* Sockets[])
@@ -60,13 +60,12 @@ void CDataUtil::SetData(char* buffer, size_t buffersize, int flags, int Client_I
 	}
 	else if (flags == 3)
 	{
-		memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
-		memcpy(buffer + 8, &((Sockets[Client_ID]->P_DATA).x), sizeof((Sockets[Client_ID]->P_DATA).x));
-		memcpy(buffer + 12, &((Sockets[Client_ID]->P_DATA).y), sizeof((Sockets[Client_ID]->P_DATA).y));
-		memcpy(buffer + 16, &((Sockets[Client_ID]->P_DATA).z), sizeof((Sockets[Client_ID]->P_DATA).z));
-		memcpy(buffer + 20, &((Sockets[Client_ID]->P_DATA).dx), sizeof((Sockets[Client_ID]->P_DATA).dx));
-		memcpy(buffer + 24, &((Sockets[Client_ID]->P_DATA).dy), sizeof((Sockets[Client_ID]->P_DATA).dy));
-		memcpy(buffer + 28, &((Sockets[Client_ID]->P_DATA).dz), sizeof((Sockets[Client_ID]->P_DATA).dz));
+		memcpy(buffer + 8, &((Sockets[Client_ID]->P_DATA).pos.x), sizeof((Sockets[Client_ID]->P_DATA).pos.x));
+		memcpy(buffer + 12, &((Sockets[Client_ID]->P_DATA).pos.y), sizeof((Sockets[Client_ID]->P_DATA).pos.y));
+		memcpy(buffer + 16, &((Sockets[Client_ID]->P_DATA).pos.z), sizeof((Sockets[Client_ID]->P_DATA).pos.z));
+		memcpy(buffer + 20, &((Sockets[Client_ID]->P_DATA).velocity.x), sizeof((Sockets[Client_ID]->P_DATA).velocity.x));
+		memcpy(buffer + 24, &((Sockets[Client_ID]->P_DATA).velocity.y), sizeof((Sockets[Client_ID]->P_DATA).velocity.y));
+		memcpy(buffer + 28, &((Sockets[Client_ID]->P_DATA).velocity.z), sizeof((Sockets[Client_ID]->P_DATA).velocity.z));
 	}
 	else if (flags == 4)
 	{

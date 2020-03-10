@@ -1,7 +1,23 @@
 #pragma once
 
-#define PORT 8282 // 임의의 포트
-#define PACKET_SIZE 1024 // 임의
+typedef struct _tagVECTOR
+{
+	float x, y, z;
+}VECTOR;
+
+typedef struct _tagVECTOR_INT
+{
+	int x, y, z;
+	_tagVECTOR_INT() :
+		x(0), y(0), z(0)
+	{	}
+	_tagVECTOR_INT(int _x, int _y, int _z) :
+		x(_x), y(_y), z(_z)
+	{	}
+	_tagVECTOR_INT(int _x, int _z) :
+		x(_x), y(0), z(_z)
+	{	}
+}VECTOR_INT, _SIZE;
 
 typedef struct SOCKET_DATA
 {
@@ -13,14 +29,15 @@ typedef struct PLAYER_DATA
 {
 	char playername[31];
 	int client_id;
-	float x, y, z;
-	float dx, dy, dz;
+	VECTOR pos;
+	VECTOR velocity;
 }PLAYER_DATA;
 
 typedef struct STRUCTURE_DATA
 {
 	unsigned int structure_id;
-	float x, y;
+	VECTOR_INT pos;
+	_SIZE size;
 }STRUCTURE_DATA;
 
 typedef struct SOCKET_INFO
@@ -33,3 +50,5 @@ typedef struct SOCKET_INFO
 	PLAYER_DATA P_DATA;
 
 } SOCKET_INFO;
+
+

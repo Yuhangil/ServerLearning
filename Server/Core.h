@@ -1,19 +1,20 @@
 #pragma once
 #include "Server.h"
+#include "World.h"
 
 class CCore
 {
 public:
 	int m_iIndex;
 
-private:
-	int m_iaddrlen;
-
 public:
 	WSAEVENT m_events[WSA_MAXIMUM_WAIT_EVENTS];
 	SOCKET_INFO* m_sockets[WSA_MAXIMUM_WAIT_EVENTS];
 	SOCKET m_hListen;
 
+private:
+	int m_iaddrlen;
+	CWorld* world;
 
 public:
 	CCore();
