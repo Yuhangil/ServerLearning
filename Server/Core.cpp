@@ -122,7 +122,7 @@ int CCore::Listen()
 
 	while (1)
 	{
-		int iEventIndex = WSAWaitForMultipleEvents(m_iIndex, m_events, FALSE, WSA_INFINITE, FALSE);
+		iEventIndex = WSAWaitForMultipleEvents(m_iIndex, m_events, FALSE, WSA_INFINITE, FALSE);
 		if (iEventIndex == WSA_WAIT_FAILED)
 		{
 			fprintf(stderr, "Event Wait Fail\n");
@@ -140,7 +140,7 @@ int CCore::Listen()
 			break;
 		}
 
-
+		CCore::TimeOut();
 
 
 		// FD_ACCEPT : Make a socket with Accept() and bind with Event object
@@ -243,7 +243,7 @@ int CCore::Listen()
 					CDataUtil::Get4Bytes(MessageBuffer + 20, &size.x, sizeof(size.x));
 					CDataUtil::Get4Bytes(MessageBuffer + 24, &size.z, sizeof(size.z));
 
-					printf("%u %d %d %d %d\n", iStructureID, tPos.x, tPos.z, size.x, size.z);
+					printf("건물 건설 %u %d %d %d %d\n", iStructureID, tPos.x, tPos.z, size.x, size.z);
 
 					if (world->AddStructure({ iStructureID, tPos, size }))
 					{
@@ -297,33 +297,8 @@ int CCore::Listen()
 
 		if (NetworkEvents.lNetworkEvents & FD_CLOSE)
 		{
-			int t = m_sockets[iEventIndex - WSA_WAIT_EVENT_0]->P_DATA.client_id;
-			closesocket(m_sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket);
-
-			free((void*)m_sockets[iEventIndex - WSA_WAIT_EVENT_0]);
-
-			if (WSACloseEvent(m_events[iEventIndex]) == TRUE)
-			{
-				printf("Event Close Success\n");
-			}
-			else
-			{
-				fprintf(stderr, "Event Close Fail\n");
-			}
-
-			for (int i = iEventIndex; i < m_iIndex; i++)
-			{
-				m_sockets[i] = m_sockets[i + 1];
-				m_events[i] = m_events[i + 1];
-			}
-			printf("%d번 클라 퇴장\n", t);
-			CDataUtil::SetData(buffer, sizeof(buffer), 2, t, m_sockets);
-			m_iIndex--;
-			for (int i = 0; i < m_iIndex; i++)
-			{
-				send(m_sockets[i]->socket, buffer, sizeof(buffer), 0);	// 플레이어가 사라졌음을 모두에게 전달
-			}
-
+			int t = iEventIndex - WSA_WAIT_EVENT_0;
+			CCore::CloseSocket(t);
 		}
 
 	}
@@ -349,6 +324,36 @@ bool CCore::Close()
 	return true;
 }
 
+void CCore::CloseSocket(int CloseSocketIndex)
+{
+
+	char Buffer[PACKET_SIZE] = {};
+	closesocket(m_sockets[CloseSocketIndex]->socket);
+	free((void*)m_sockets[CloseSocketIndex]);
+
+	if (WSACloseEvent(m_events[iEventIndex]) == TRUE)
+	{
+		printf("Event Close Success\n");
+	}
+	else
+	{
+		fprintf(stderr, "Event Close Fail\n");
+	}
+
+	for (int i = iEventIndex; i < m_iIndex; i++)
+	{
+		m_sockets[i] = m_sockets[i + 1];
+		m_events[i] = m_events[i + 1];
+	}
+	m_iIndex--;
+	printf("%d번 클라 퇴장\n", CloseSocketIndex);
+	CDataUtil::SetData(Buffer, sizeof(Buffer), 2, CloseSocketIndex, m_sockets);
+	for (int i = 0; i < m_iIndex; i++)
+	{
+		send(m_sockets[i]->socket, Buffer, sizeof(Buffer), 0);	// 플레이어가 사라졌음을 모두에게 전달
+	}
+}
+
 void CCore::SetSOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr)
 {
 	sock_addr->sin_family = family;
@@ -360,13 +365,13 @@ void CCore::TimeOut()
 {
 	int i;
 	clock_t T = clock();
-	WaitForSingleObject(CThreadUtil::hMutex, INFINITE);
 	for (i = 1; i < m_iIndex; i++)
 	{
-		if ((T - m_sockets[i]->last_send) / CLOCKS_PER_SEC)
+		printf("%f초\n", (float)(T - m_sockets[i]->last_send) / CLOCKS_PER_SEC);
+		if ((float)(T - m_sockets[i]->last_send) / CLOCKS_PER_SEC > 10)
 		{
-			// 소켓 종료 절차 밟기
+			printf("%d 번 클라 타임아웃\n", i);
+			CCore::CloseSocket(i);
 		}
 	}
-	ReleaseMutex(CThreadUtil::hMutex);
 }

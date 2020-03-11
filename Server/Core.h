@@ -11,6 +11,7 @@ public:
 	WSAEVENT m_events[WSA_MAXIMUM_WAIT_EVENTS];
 	SOCKET_INFO* m_sockets[WSA_MAXIMUM_WAIT_EVENTS];
 	SOCKET m_hListen;
+	int iEventIndex;
 
 private:
 	int m_iaddrlen;
@@ -29,5 +30,6 @@ public:
 private:
 	void SetSOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr);
 	void TimeOut();
+	void CloseSocket(int CloseSocketIndex);
 };
 
