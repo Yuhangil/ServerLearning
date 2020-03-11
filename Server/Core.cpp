@@ -232,7 +232,7 @@ int CCore::Listen()
 					CDataUtil::SetData(buffer, sizeof(buffer), 3, iClientID, m_sockets);
 					Send_All(buffer, sizeof(buffer), iClientID);
 					break;
-				case 4: 
+				case 4:		// build something
 				{
 					unsigned int iStructureID;
 					VECTOR_INT tPos;
@@ -260,26 +260,44 @@ int CCore::Listen()
 					}
 					else
 					{
-
+						fprintf(stderr, "Flag4 AddStructure() 실패\n");
 					}
 
 					break;
 				}
-				case 5:
+				case 5:	// itemdrop
+					unsigned int itemID;
+					VECTOR tPos;
+					CDataUtil::Get4Bytes(MessageBuffer + 8, &itemID, sizeof(itemID));
+					CDataUtil::Get4Bytes(MessageBuffer + 12, &tPos.x, sizeof(tPos.x));
+					CDataUtil::Get4Bytes(MessageBuffer + 16, &tPos.z, sizeof(tPos.z));
+					/* 
+
+					if (world->AddItemDrop({itemID, tPos}))
+					{
+						memset(buffer, 0, sizeof(buffer));
+						int header = CDataUtil::SetHeader(5);
+						memcpy(buffer, &header, sizeof(header));
+						memcpy(buffer + sizeof(header), &iClientID, sizeof(iClientID));
+						memcpy(buffer + 8, &itemID, sizeof(itemID));
+						memcpy(buffer + 12, &Pos.x, sizeof(Pos.x));
+						memcpy(buffer + 16, &Pos.z, sizeof(Pos.z));
+						send(m_sockets[iClientID]->socket, buffer, sizeof(buffer), 0);
+						Send_All(buffer, sizeof(buffer), iClientID);
+					}
+					else
+					{
+						fprintf(stderr, "Flag5 AddItemDrop() 실패\n");
+					}
+					*/
 					break;
 				case 6:
 					break;
 				case 7:
 					break;
+				case 0xFF:		// String Message
+					break;
 				}
-				/*
-				ad = (const wchar_t*)(MessageBuffer + 4);
-				setlocale(LC_ALL, "");
-				if (receiveBytes > 0)
-				{
-					wprintf(L"TRACE - Receive Message : %s (%d bytes)\n", ad, receiveBytes - 4);
-				}
-				*/
 			}
 		}
 
