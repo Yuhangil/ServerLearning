@@ -5,16 +5,16 @@
 class CCore
 {
 public:
-	int m_iIndex;
+	int index;
 
 public:
-	WSAEVENT m_events[WSA_MAXIMUM_WAIT_EVENTS];
-	SOCKET_INFO* m_sockets[WSA_MAXIMUM_WAIT_EVENTS];
-	SOCKET m_hListen;
-	int iEventIndex;
+	WSAEVENT events[WSA_MAXIMUM_WAIT_EVENTS];
+	SOCKET_INFO* sockets[WSA_MAXIMUM_WAIT_EVENTS];
+	SOCKET hListen;
+	int eventIndex;
 
 private:
-	int m_iaddrlen;
+	int addrlen;
 	CWorld* world;
 
 public:

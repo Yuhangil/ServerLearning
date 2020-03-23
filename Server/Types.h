@@ -1,8 +1,71 @@
 #pragma once
 
+#include <cmath>
+
 typedef struct _tagVECTOR
 {
 	float x, y, z;
+	_tagVECTOR() :
+		x(0), y(0), z(0)
+	{
+	}
+	_tagVECTOR(float _x, float _y, float _z) :
+		x(_x), y(_y), z(_z)
+	{
+	}
+	_tagVECTOR(float _x, float _z) :
+		x(_x), y(0), z(_z)
+	{
+	}
+
+	static _tagVECTOR Cross(_tagVECTOR v1, _tagVECTOR v2)
+	{
+		return _tagVECTOR(
+			v1.y * v2.z - v1.z * v2.y,
+			v1.z * v2.x - v1.x * v2.z,
+			v1.x * v2.y - v1.y * v2.x);
+	}
+	float Magnitude()
+	{
+		return sqrtf(x * x + y * y + z * z);
+	}
+
+	void operator = (const _tagVECTOR& v)
+	{
+		x = v.x;
+		y = v.y;
+		z = v.z;
+	}
+	_tagVECTOR operator +(const _tagVECTOR& v) const
+	{
+		_tagVECTOR tV;
+		tV.x = x + v.x;
+		tV.y = y + v.y;
+		tV.z = z + v.z;
+		return tV;
+	}
+	void operator +=(const _tagVECTOR& v)
+	{
+		x += v.x;
+		y += v.y;
+		z += v.z;
+	}
+	_tagVECTOR operator *(float f) const
+	{
+		_tagVECTOR tV;
+		tV.x = x * f;
+		tV.y = y * f;
+		tV.z = z * f;
+		return tV;
+	}
+	_tagVECTOR operator /(float f) const
+	{
+		_tagVECTOR tV;
+		tV.x = x / f;
+		tV.y = y / f;
+		tV.z = z / f;
+		return tV;
+	}
 }VECTOR;
 
 typedef struct _tagVECTOR_INT
@@ -17,6 +80,43 @@ typedef struct _tagVECTOR_INT
 	_tagVECTOR_INT(int _x, int _z) :
 		x(_x), y(0), z(_z)
 	{	}
+
+	static _tagVECTOR_INT Cross(_tagVECTOR_INT v1, _tagVECTOR_INT v2)
+	{
+		return _tagVECTOR_INT(
+			v1.y * v2.z - v1.z * v2.y, 
+			v1.z * v2.x - v1.x * v2.z,
+			v1.x * v2.y - v1.y * v2.x);
+	}
+
+	void operator = (const _tagVECTOR_INT& v)
+	{
+		x = v.x;
+		y = v.y;
+		z = v.z;
+	}
+	_tagVECTOR_INT operator +(const _tagVECTOR_INT& v) const
+	{
+		_tagVECTOR_INT tV;
+		tV.x = x + v.x;
+		tV.y = y + v.y;
+		tV.z = z + v.z;
+		return tV;
+	}
+	void operator +=(const _tagVECTOR_INT& v)
+	{
+		x += v.x;
+		y += v.y;
+		z += v.z;
+	}
+	_tagVECTOR_INT operator *(float f) const
+	{
+		_tagVECTOR_INT tV;
+		tV.x = x * f;
+		tV.y = y * f;
+		tV.z = z * f;
+		return tV;
+	}
 }VECTOR_INT, _SIZE;
 
 typedef struct SOCKET_DATA
@@ -31,6 +131,7 @@ typedef struct PLAYER_DATA
 	int client_id;
 	VECTOR pos;
 	VECTOR velocity;
+
 }PLAYER_DATA;
 
 typedef struct STRUCTURE_DATA

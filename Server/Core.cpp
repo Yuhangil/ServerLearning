@@ -4,15 +4,16 @@
 #include <stdio.h>
 
 CCore::CCore() :
-	m_iIndex(0),
-	m_iaddrlen(0),
-	m_hListen(INVALID_SOCKET)
+	index(0),
+	addrlen(0),
+	hListen(INVALID_SOCKET)
 {
 }
 
 CCore::~CCore()
 {
-	delete world;
+	if(world != NULL)
+		delete world;
 }
 
 
@@ -38,8 +39,8 @@ bool CCore::Init()
 
 
 
-	m_hListen = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);	// IPV4 type tcp protocol
-	if (m_hListen == INVALID_SOCKET)
+	hListen = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);	// IPV4 type tcp protocol
+	if (hListen == INVALID_SOCKET)
 	{
 		fprintf(stderr, "Socket Failed With Error : %d\n", WSAGetLastError());
 		WSACleanup();
@@ -52,25 +53,25 @@ bool CCore::Init()
 	SetSOCKADDR(&tListenAddr, AF_INET, PORT, INADDR_ANY);
 
 
-	iResult = bind(m_hListen, (SOCKADDR*)&tListenAddr, sizeof(tListenAddr));
+	iResult = bind(hListen, (SOCKADDR*)&tListenAddr, sizeof(tListenAddr));
 
 
 	if (iResult == SOCKET_ERROR)
 	{
 		fprintf(stderr, "Bind Failed\n");
-		closesocket(m_hListen);
+		closesocket(hListen);
 		WSACleanup();
 		return false;
 	}
 	printf("Socket Bind OK!\n");
 
-	iResult = listen(m_hListen, SOMAXCONN);
+	iResult = listen(hListen, SOMAXCONN);
 
 
 	if (iResult == SOCKET_ERROR)
 	{
 		fprintf(stderr, "Listen Error\n");
-		closesocket(m_hListen);
+		closesocket(hListen);
 		WSACleanup();
 		return false;
 	}
@@ -80,15 +81,15 @@ bool CCore::Init()
 
 	SOCKET_INFO* SocketInfo;
 	SocketInfo = (SOCKET_INFO*)calloc(1, sizeof(SOCKET_INFO));
-	SocketInfo->socket = m_hListen;
-	m_sockets[m_iIndex] = SocketInfo;
+	SocketInfo->socket = hListen;
+	sockets[index] = SocketInfo;
 
 
-	m_events[m_iIndex] = WSACreateEvent();
-	if (m_events[m_iIndex] == WSA_INVALID_EVENT)
+	events[index] = WSACreateEvent();
+	if (events[index] == WSA_INVALID_EVENT)
 	{
 		fprintf(stderr, "Event Create Fail\n");
-		closesocket(m_hListen);
+		closesocket(hListen);
 		WSACleanup();
 		return false;
 	}
@@ -96,17 +97,17 @@ bool CCore::Init()
 
 
 
-	if (WSAEventSelect(m_hListen, m_events[m_iIndex], FD_ACCEPT | FD_CLOSE) == SOCKET_ERROR)
+	if (WSAEventSelect(hListen, events[index], FD_ACCEPT | FD_CLOSE) == SOCKET_ERROR)
 	{
 		fprintf(stderr, "Event Select Fail\n");
-		closesocket(m_hListen);
+		closesocket(hListen);
 		WSACleanup();
 		return false;
 	}
 	printf("WSAEventSelect OK!\n");
 
-	m_iIndex++;	// Index 0 is ServerSocket
-	m_iaddrlen = sizeof(SOCKADDR_IN);
+	index++;	// Index 0 is ServerSocket
+	addrlen = sizeof(SOCKADDR_IN);
 	return true;
 }
 
@@ -117,13 +118,13 @@ int CCore::Listen()
 	SOCKET hClient = INVALID_SOCKET;
 	SOCKADDR_IN tClientAddr = {};
 
-	char MessageBuffer[PACKET_SIZE] = {};	// 클라이언트->서버 버퍼
+	char msgBuffer[PACKET_SIZE] = {};	// 클라이언트->서버 버퍼
 	char buffer[PACKET_SIZE] = {};		// 서버->클라이언트 버퍼
 
 	while (1)
 	{
-		iEventIndex = WSAWaitForMultipleEvents(m_iIndex, m_events, FALSE, WSA_INFINITE, FALSE);
-		if (iEventIndex == WSA_WAIT_FAILED)
+		eventIndex = WSAWaitForMultipleEvents(index, events, FALSE, WSA_INFINITE, FALSE);
+		if (eventIndex == WSA_WAIT_FAILED)
 		{
 			fprintf(stderr, "Event Wait Fail\n");
 			break;
@@ -134,7 +135,7 @@ int CCore::Listen()
 		}
 
 		// Get Information of Event Object
-		if (WSAEnumNetworkEvents(m_sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, m_events[iEventIndex - WSA_WAIT_EVENT_0], &NetworkEvents) == SOCKET_ERROR)
+		if (WSAEnumNetworkEvents(sockets[eventIndex - WSA_WAIT_EVENT_0]->socket, events[eventIndex - WSA_WAIT_EVENT_0], &NetworkEvents) == SOCKET_ERROR)
 		{
 			fprintf(stderr, "Event Type Error\n");
 			break;
@@ -154,66 +155,66 @@ int CCore::Listen()
 				break;
 			}
 
-			if (m_iIndex > WSA_MAXIMUM_WAIT_EVENTS)
+			if (index > WSA_MAXIMUM_WAIT_EVENTS)
 			{
 				fprintf(stderr, "Connection Full\n");
 				break;
 			}
 
-			hClient = accept(m_sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, (SOCKADDR*)&tClientAddr, &m_iaddrlen);
+			hClient = accept(sockets[eventIndex - WSA_WAIT_EVENT_0]->socket, (SOCKADDR*)&tClientAddr, &addrlen);
 			if (hClient == INVALID_SOCKET)
 			{
 				fprintf(stderr, "Client Accept Fail\n");
 				continue;
 			}
 
-			m_sockets[m_iIndex] = (SOCKET_INFO*)calloc(1, sizeof(SOCKET_INFO));
-			m_sockets[m_iIndex]->socket = hClient;
-			m_sockets[m_iIndex]->P_DATA.client_id = m_iIndex;
-			m_sockets[m_iIndex]->last_send = clock();
-			m_events[m_iIndex] = WSACreateEvent();
-			if (m_events[m_iIndex] == WSA_INVALID_EVENT)
+			sockets[index] = (SOCKET_INFO*)calloc(1, sizeof(SOCKET_INFO));
+			sockets[index]->socket = hClient;
+			sockets[index]->P_DATA.client_id = index;
+			sockets[index]->last_send = clock();
+			events[index] = WSACreateEvent();
+			if (events[index] == WSA_INVALID_EVENT)
 			{
 				fprintf(stderr, "Event Create Fail\n");
 				closesocket(hClient);
-				closesocket(m_hListen);
+				closesocket(hListen);
 				WSACleanup();
 				return 1;
 			}
 
-			if (WSAEventSelect(hClient, m_events[m_iIndex], FD_READ | FD_WRITE | FD_CLOSE) == SOCKET_ERROR)
+			if (WSAEventSelect(hClient, events[index], FD_READ | FD_WRITE | FD_CLOSE) == SOCKET_ERROR)
 			{
 				fprintf(stderr, "Event Select Fail\n");
 				closesocket(hClient);
-				closesocket(m_hListen);
+				closesocket(hListen);
 				WSACleanup();
 				return 1;
 			}
-			printf("%d번 클라 입장\n", m_iIndex);
+			printf("%d번 클라 입장\n", index);
 			// 새로 ACCEPT한 Client에게 ID 전달
-			CDataUtil::SetData(buffer, sizeof(buffer), 1, m_iIndex, m_sockets);
-			for (int i = 1; i <= m_iIndex; i++)		// 0번은 server이므로 1부터 시작
+			CDataUtil::SetData(buffer, sizeof(buffer), 1, index, sockets);
+			for (int i = 1; i <= index; i++)		// 0번은 server이므로 1부터 시작
 			{
-				send(m_sockets[i]->socket, buffer, sizeof(buffer), 0);
+				send(sockets[i]->socket, buffer, sizeof(buffer), 0);
 				// player가 참가했음을 전달
 			}
-			for (int i = 1; i < m_iIndex; i++)
+			for (int i = 1; i < index; i++)
 			{
 				memset(buffer, 0, sizeof(buffer));
-				CDataUtil::SetData(buffer, sizeof(buffer), 1, i, m_sockets);
-				send(m_sockets[m_iIndex]->socket, buffer, sizeof(buffer), 0);
+				CDataUtil::SetData(buffer, sizeof(buffer), 1, i, sockets);
+				send(sockets[index]->socket, buffer, sizeof(buffer), 0);
 			}
-			m_iIndex++;
+			index++;
 		}
 
 
 		if (NetworkEvents.lNetworkEvents & FD_READ)
 		{
 			memset(buffer, 0, sizeof(buffer));
-			memset(MessageBuffer, 0, sizeof(MessageBuffer));
+			memset(msgBuffer, 0, sizeof(msgBuffer));
 			const wchar_t* ad;
-			int iReceiveBytes = recv(m_sockets[iEventIndex - WSA_WAIT_EVENT_0]->socket, MessageBuffer, sizeof(MessageBuffer), 0);
-			int iHeader = CDataUtil::GetHeader(MessageBuffer);
+			int iReceiveBytes = recv(sockets[eventIndex - WSA_WAIT_EVENT_0]->socket, msgBuffer, sizeof(msgBuffer), 0);
+			int iHeader = CDataUtil::GetHeader(msgBuffer);
 
 			if ((iHeader & 0xFFFF0000) != 0xD93D0000)
 			{
@@ -221,42 +222,42 @@ int CCore::Listen()
 			}
 			else
 			{
-				int iClientID = iEventIndex - WSA_WAIT_EVENT_0;
+				int clientID = eventIndex - WSA_WAIT_EVENT_0;
 				//printf("%d\n", Client_ID);
-				m_sockets[iClientID]->last_send = clock();
+				sockets[clientID]->last_send = clock();
 				//printf("플래그는 : %u\n", header & 0xFF);
 				switch (iHeader & 0xFFFF)
 				{
-				case 3:		// UpdatePlayerPos
-					CDataUtil::GetPlayerPos(MessageBuffer + 8, m_sockets, iClientID);
-					CDataUtil::SetData(buffer, sizeof(buffer), 3, iClientID, m_sockets);
-					Send_All(buffer, sizeof(buffer), iClientID);
+				case 3: {	// UpdatePlayerPos
+					CDataUtil::GetPlayerPos(msgBuffer + 8, sockets, clientID);
+					CDataUtil::SetData(buffer, sizeof(buffer), 3, clientID, sockets);
+					Send_All(buffer, sizeof(buffer), clientID);
 					break;
-				case 4:		// build something
-				{
-					unsigned int iStructureID;
-					VECTOR_INT tPos;
+				}
+				case 4:	{	// build something
+					unsigned int structureID;
+					VECTOR_INT pos;
 					_SIZE size;
-					CDataUtil::Get4Bytes(MessageBuffer + 8, &iStructureID, sizeof(iStructureID));
-					CDataUtil::Get4Bytes(MessageBuffer + 12, &tPos.x, sizeof(tPos.x));
-					CDataUtil::Get4Bytes(MessageBuffer + 16, &tPos.z, sizeof(tPos.z));
-					CDataUtil::Get4Bytes(MessageBuffer + 20, &size.x, sizeof(size.x));
-					CDataUtil::Get4Bytes(MessageBuffer + 24, &size.z, sizeof(size.z));
+					CDataUtil::Get4Bytes(msgBuffer + 8, &structureID, sizeof(structureID));
+					CDataUtil::Get4Bytes(msgBuffer + 12, &pos.x, sizeof(pos.x));
+					CDataUtil::Get4Bytes(msgBuffer + 16, &pos.z, sizeof(pos.z));
+					CDataUtil::Get4Bytes(msgBuffer + 20, &size.x, sizeof(size.x));
+					CDataUtil::Get4Bytes(msgBuffer + 24, &size.z, sizeof(size.z));
 
-					printf("건물 건설 %u %d %d %d %d\n", iStructureID, tPos.x, tPos.z, size.x, size.z);
+					printf("건물 건설 %u %d %d %d %d\n", structureID, pos.x, pos.z, size.x, size.z);
 
-					if (world->AddStructure({ iStructureID, tPos, size }))
+					if (world->AddStructure({ structureID, pos, size }))
 					{
 						memset(buffer, 0, sizeof(buffer));
 						int header = CDataUtil::SetHeader(4);
 
 						memcpy(buffer, &header, sizeof(header));
-						memcpy(buffer + sizeof(header), &iClientID, sizeof(iClientID));
-						memcpy(buffer + 8, &iStructureID, sizeof(iStructureID));
-						memcpy(buffer + 12, &tPos.x, sizeof(tPos.x));
-						memcpy(buffer + 16, &tPos.z, sizeof(tPos.z));
-						send(m_sockets[iClientID]->socket, buffer, sizeof(buffer), 0);
-						Send_All(buffer, sizeof(buffer), iClientID);
+						memcpy(buffer + sizeof(header), &clientID, sizeof(clientID));
+						memcpy(buffer + 8, &structureID, sizeof(structureID));
+						memcpy(buffer + 12, &pos.x, sizeof(pos.x));
+						memcpy(buffer + 16, &pos.z, sizeof(pos.z));
+						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+						Send_All(buffer, sizeof(buffer), clientID);
 					}
 					else
 					{
@@ -265,13 +266,13 @@ int CCore::Listen()
 
 					break;
 				}
-				case 5:	// itemdrop
+				case 5: {	// itemdrop
 					unsigned int itemID;
-					VECTOR tPos;
-					CDataUtil::Get4Bytes(MessageBuffer + 8, &itemID, sizeof(itemID));
-					CDataUtil::Get4Bytes(MessageBuffer + 12, &tPos.x, sizeof(tPos.x));
-					CDataUtil::Get4Bytes(MessageBuffer + 16, &tPos.z, sizeof(tPos.z));
-					/* 
+					VECTOR pos;
+					CDataUtil::Get4Bytes(msgBuffer + 8, &itemID, sizeof(itemID));
+					CDataUtil::Get4Bytes(msgBuffer + 12, &pos.x, sizeof(pos.x));
+					CDataUtil::Get4Bytes(msgBuffer + 16, &pos.z, sizeof(pos.z));
+					/*
 
 					if (world->AddItemDrop({itemID, tPos}))
 					{
@@ -290,11 +291,39 @@ int CCore::Listen()
 						fprintf(stderr, "Flag5 AddItemDrop() 실패\n");
 					}
 					*/
+					break; 
+				}
+				case 6: {
+					
+					break; 
+				}
+				case 7: {
+					int terrainFaceIdx;
+					int chunkX;
+					int chunkZ;
+					CDataUtil::Get4Bytes(msgBuffer + 8, &terrainFaceIdx, sizeof(terrainFaceIdx));
+					CDataUtil::Get4Bytes(msgBuffer + 12, &chunkX, sizeof(chunkX));
+					CDataUtil::Get4Bytes(msgBuffer + 16, &chunkZ, sizeof(chunkZ));
+
+					for (int i = 0; i < CHUNK_SIZE; i++)
+					{
+						memset(buffer, 0, sizeof(buffer));
+						int header = CDataUtil::SetHeader(7);
+
+						memcpy(buffer, &header, sizeof(header));
+						memcpy(buffer + sizeof(header), &clientID, sizeof(clientID));
+						memcpy(buffer + 8, &terrainFaceIdx, sizeof(terrainFaceIdx));
+						memcpy(buffer + 12, &chunkX, sizeof(chunkX));
+						memcpy(buffer + 16, &chunkZ, sizeof(chunkZ));
+						memcpy(buffer + 20, &i, sizeof(i));
+						memcpy(buffer + 24,
+							world->GetTerrainFace(terrainFaceIdx)->chunks[chunkZ][chunkX]->terrainData[i],
+							sizeof(int) * CHUNK_SIZE);
+						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+					}
+
 					break;
-				case 6:
-					break;
-				case 7:
-					break;
+				}
 				case 0xFF:		// String Message
 					break;
 				}
@@ -315,7 +344,7 @@ int CCore::Listen()
 
 		if (NetworkEvents.lNetworkEvents & FD_CLOSE)
 		{
-			int t = iEventIndex - WSA_WAIT_EVENT_0;
+			int t = eventIndex - WSA_WAIT_EVENT_0;
 			CCore::CloseSocket(t);
 		}
 
@@ -326,18 +355,18 @@ int CCore::Listen()
 void CCore::Send_All(char* buffer, size_t buffersize, int Client_ID)
 {
 	int i;
-	for (i = 1; i < m_iIndex; i++)
+	for (i = 1; i < index; i++)
 	{
 		if (i != Client_ID)
 		{
-			send(m_sockets[i]->socket, buffer, buffersize, 0);
+			send(sockets[i]->socket, buffer, buffersize, 0);
 		}
 	}
 }
 
 bool CCore::Close()
 {
-	closesocket(m_hListen);
+	closesocket(hListen);
 	WSACleanup();		// 소켓 종료
 	return true;
 }
@@ -346,10 +375,10 @@ void CCore::CloseSocket(int CloseSocketIndex)
 {
 
 	char Buffer[PACKET_SIZE] = {};
-	closesocket(m_sockets[CloseSocketIndex]->socket);
-	free((void*)m_sockets[CloseSocketIndex]);
+	closesocket(sockets[CloseSocketIndex]->socket);
+	free((void*)sockets[CloseSocketIndex]);
 
-	if (WSACloseEvent(m_events[iEventIndex]) == TRUE)
+	if (WSACloseEvent(events[eventIndex]) == TRUE)
 	{
 		printf("Event Close Success\n");
 	}
@@ -358,17 +387,17 @@ void CCore::CloseSocket(int CloseSocketIndex)
 		fprintf(stderr, "Event Close Fail\n");
 	}
 
-	for (int i = iEventIndex; i < m_iIndex; i++)
+	for (int i = eventIndex; i < index; i++)
 	{
-		m_sockets[i] = m_sockets[i + 1];
-		m_events[i] = m_events[i + 1];
+		sockets[i] = sockets[i + 1];
+		events[i] = events[i + 1];
 	}
-	m_iIndex--;
+	index--;
 	printf("%d번 클라 퇴장\n", CloseSocketIndex);
-	CDataUtil::SetData(Buffer, sizeof(Buffer), 2, CloseSocketIndex, m_sockets);
-	for (int i = 0; i < m_iIndex; i++)
+	CDataUtil::SetData(Buffer, sizeof(Buffer), 2, CloseSocketIndex, sockets);
+	for (int i = 0; i < index; i++)
 	{
-		send(m_sockets[i]->socket, Buffer, sizeof(Buffer), 0);	// 플레이어가 사라졌음을 모두에게 전달
+		send(sockets[i]->socket, Buffer, sizeof(Buffer), 0);	// 플레이어가 사라졌음을 모두에게 전달
 	}
 }
 
@@ -383,10 +412,10 @@ void CCore::TimeOut()
 {
 	int i;
 	clock_t T = clock();
-	for (i = 1; i < m_iIndex; i++)
+	for (i = 1; i < index; i++)
 	{
-		printf("%f초\n", (float)(T - m_sockets[i]->last_send) / CLOCKS_PER_SEC);
-		if ((float)(T - m_sockets[i]->last_send) / CLOCKS_PER_SEC > 10)
+		//printf("%f초\n", (float)(T - sockets[i]->last_send) / CLOCKS_PER_SEC);
+		if ((float)(T - sockets[i]->last_send) / CLOCKS_PER_SEC > 10)
 		{
 			printf("%d 번 클라 타임아웃\n", i);
 			CCore::CloseSocket(i);
