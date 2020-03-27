@@ -14,25 +14,21 @@ const int CWorld::diceRoll[2][2][4] = {
 CWorld::CWorld():
 	active(true)
 {
-	noise = new CNoise();
-
-	VECTOR direction[6] = {
-		{0, 1, 0}, {1, 0, 0}, {-1, 0, 0},
-		{0, 0, -1}, {0, 0, 1}, {0, -1, 0}
-	};
-	// 위, 동, 서, 남, 북, 아래
-
-	for (int i = 0; i < 6; i++)
-	{
-		terrainFace[i] = new CTerrainFace(direction[i], noise);
-	}
+	CreateWorld(0);
 }
 
 CWorld::~CWorld()
 {
-	delete noise;
-	for (int i = 0; i < 6; i++)
-		delete terrainFace[i];
+	for (int i = 0; i < CHUNKS_PER_WORLD; i++)
+		for (int j = 0; j < CHUNKS_PER_WORLD; j++)
+			delete chunks[i][j];
+}
+
+CChunk* CWorld::GetChunk(int x, int z)
+{
+	if (x < 0 || z < 0 || x >= CHUNKS_PER_WORLD || z >= CHUNKS_PER_WORLD)
+		return nullptr;
+	return chunks[z][x];
 }
 
 bool CWorld::AddStructure(STRUCTURE_DATA tStructureData)
@@ -48,44 +44,40 @@ bool CWorld::AddStructure(STRUCTURE_DATA tStructureData)
 	return true;
 }
 
-CTerrainFace* CWorld::GetTerrainFace(int idx)
+void CWorld::CreateWorld(int seed)
 {
-	return terrainFace[idx];
-}
+	CNoise* noise = new CNoise(seed);
+	int strength = 10;
 
+	for (int i = 0; i < CHUNKS_PER_WORLD; i++)
+		for (int j = 0; j < CHUNKS_PER_WORLD; j++)
+			chunks[i][j] = new CChunk(VECTOR_INT(j, i));
 
-int CWorld::GetTerrainFaceIdxFromWorldPos(VECTOR worldPos) // worldPos : 게임 내에서 논리적으로 Y축을 추가해 x, z축을 지면축으로
-{
-	if (worldPos.x < 0) worldPos.x += CTerrainFace::resolution * 4;
-	if (worldPos.z < 0) worldPos.z += CTerrainFace::resolution * 4;
-	// 정육면체를 몇 번 굴렸는지에 대한 값
-	int rollX = (worldPos.x / CTerrainFace::resolution);
-	int rollZ = (worldPos.z / CTerrainFace::resolution);
-
-	rollX = rollX % 4;
-	rollZ = rollZ % 4;
-	
-	// 정육면체를 굴려서 worldPos에 해당하는 면이 윗면에 오도록
-	int dice[6] = { 0, 1, 2, 3, 4, 5 };
-	int dir = ((0 < worldPos.x) - (0 > worldPos.x) + 1) / 2;
-	for (int i = 0; i < abs(rollX); i++)
+	int size = CHUNKS_PER_WORLD * CHUNK_SIZE;
+	for (int z = 0; z < size; z++)
 	{
-		int t = dice[diceRoll[0][dir][3]];
-		dice[diceRoll[0][dir][3]] = dice[diceRoll[0][dir][0]];
-		dice[diceRoll[0][dir][0]] = dice[diceRoll[0][dir][1]];
-		dice[diceRoll[0][dir][1]] = dice[diceRoll[0][dir][2]];
-		dice[diceRoll[0][dir][2]] = t;
-	}
-	dir = ((0 < worldPos.z) - (0 > worldPos.z) + 1) / 2;
-	for (int i = 0; i < abs(rollZ); i++)
-	{
-		int t = dice[diceRoll[1][dir][3]];
-		dice[diceRoll[1][dir][3]] = dice[diceRoll[1][dir][0]];
-		dice[diceRoll[1][dir][0]] = dice[diceRoll[1][dir][1]];
-		dice[diceRoll[1][dir][1]] = dice[diceRoll[1][dir][2]];
-		dice[diceRoll[1][dir][2]] = t;
+		for (int x = 0; x < size; x++)
+		{
+			float falloffValue = max(abs(z / (float)size * 2 - 1), abs(x / (float)size * 2 - 1));
+			falloffValue = FalloffModify(falloffValue);
+			
+			float noiseValue = noise->GetValue(VECTOR((float)x / (size - 1), (float)z / (size - 1)));
+			noiseValue -= falloffValue;
+			if (noiseValue < 0)
+				noiseValue = 0;
+			noiseValue *= strength;
+
+			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE] = (int)noiseValue;
+		}
 	}
 
-	return dice[0];
+
+	delete noise;
 }
 
+float CWorld::FalloffModify(float value)
+{
+	float a = 3.f;
+	float b = 2.2f;
+	return pow(value, a) / (pow(value, a) + pow(b - b* value, a));
+}

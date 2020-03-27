@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Server.h"
-#include "TerrainFace.h"
 #include "Noise.h"
+#include "Chunk.h"
 
 class CWorld
 {
@@ -10,8 +10,7 @@ private:
 	static const int diceRoll[2][2][4];
 private:
 	std::vector<STRUCTURE_DATA> structures;
-	CTerrainFace* terrainFace[6];
-	CNoise* noise;
+	CChunk* chunks[CHUNKS_PER_WORLD][CHUNKS_PER_WORLD];
 
 public:
 	bool active;
@@ -22,8 +21,13 @@ public:
 	~CWorld();
 
 public:
+	CChunk* GetChunk(int x, int z);
+
+public:
 	bool AddStructure(STRUCTURE_DATA tStructureData);
-	CTerrainFace* GetTerrainFace(int idx);
-	int GetTerrainFaceIdxFromWorldPos(VECTOR worldPos);
+	
+private:
+	void CreateWorld(int seed);
+	float FalloffModify(float value);
 };
 

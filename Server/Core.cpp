@@ -298,13 +298,12 @@ int CCore::Listen()
 					break; 
 				}
 				case 7: {
-					int terrainFaceIdx;
 					int chunkX;
 					int chunkZ;
-					CDataUtil::Get4Bytes(msgBuffer + 8, &terrainFaceIdx, sizeof(terrainFaceIdx));
-					CDataUtil::Get4Bytes(msgBuffer + 12, &chunkX, sizeof(chunkX));
-					CDataUtil::Get4Bytes(msgBuffer + 16, &chunkZ, sizeof(chunkZ));
+					CDataUtil::Get4Bytes(msgBuffer + 8, &chunkX, sizeof(chunkX));
+					CDataUtil::Get4Bytes(msgBuffer + 12, &chunkZ, sizeof(chunkZ));
 
+					printf("Receive Chunk Data[%d, %d]\n", chunkX, chunkZ);
 					for (int i = 0; i < CHUNK_SIZE; i++)
 					{
 						memset(buffer, 0, sizeof(buffer));
@@ -312,13 +311,11 @@ int CCore::Listen()
 
 						memcpy(buffer, &header, sizeof(header));
 						memcpy(buffer + sizeof(header), &clientID, sizeof(clientID));
-						memcpy(buffer + 8, &terrainFaceIdx, sizeof(terrainFaceIdx));
-						memcpy(buffer + 12, &chunkX, sizeof(chunkX));
-						memcpy(buffer + 16, &chunkZ, sizeof(chunkZ));
-						memcpy(buffer + 20, &i, sizeof(i));
-						memcpy(buffer + 24,
-							world->GetTerrainFace(terrainFaceIdx)->chunks[chunkZ][chunkX]->terrainData[i],
-							sizeof(int) * CHUNK_SIZE);
+						memcpy(buffer + 8, &chunkX, sizeof(chunkX));
+						memcpy(buffer + 12, &chunkZ, sizeof(chunkZ));
+						memcpy(buffer + 16, &i, sizeof(i));
+						memcpy(buffer + 20, &world->GetChunk(chunkX,chunkZ)->terrainData[i], sizeof(unsigned int) * CHUNK_SIZE);
+
 						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
 					}
 

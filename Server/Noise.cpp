@@ -36,9 +36,8 @@ CNoise::~CNoise()
     delete[] _random;
 }
 
-int CNoise::GetValue(VECTOR vector)
+float CNoise::GetValue(VECTOR vector)
 {
-    float strength = 1;
     float roughness = 2.34;
     float persistence = 0.54;
 
@@ -53,10 +52,10 @@ int CNoise::GetValue(VECTOR vector)
         amplitude *= persistence;
     }
 
-    return noiseValue * strength;
+    return noiseValue;
 }
 
-int CNoise::Evaluate(VECTOR vector)
+float CNoise::Evaluate(VECTOR vector)
 {
     double x = vector.x;
     double y = vector.y;

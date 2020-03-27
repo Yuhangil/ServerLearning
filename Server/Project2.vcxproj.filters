@@ -22,9 +22,6 @@
     <Filter Include="03. World">
       <UniqueIdentifier>{2cb2a241-d90b-424b-9af4-c6fc97cff39e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="03. World\01. TerrainFace">
-      <UniqueIdentifier>{77cdfef0-684a-431e-9c55-28d3799a461a}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.cpp">
@@ -46,10 +43,7 @@
       <Filter>03. World</Filter>
     </ClCompile>
     <ClCompile Include="Chunk.cpp">
-      <Filter>03. World\01. TerrainFace</Filter>
-    </ClCompile>
-    <ClCompile Include="TerrainFace.cpp">
-      <Filter>03. World\01. TerrainFace</Filter>
+      <Filter>03. World</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -75,10 +69,7 @@
       <Filter>03. World</Filter>
     </ClInclude>
     <ClInclude Include="Chunk.h">
-      <Filter>03. World\01. TerrainFace</Filter>
-    </ClInclude>
-    <ClInclude Include="TerrainFace.h">
-      <Filter>03. World\01. TerrainFace</Filter>
+      <Filter>03. World</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

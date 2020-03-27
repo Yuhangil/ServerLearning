@@ -41,10 +41,10 @@ public :
     ~CNoise();
 
 public:
-	int GetValue(VECTOR vector);
+	float GetValue(VECTOR vector);
 
 private:
-    int Evaluate(VECTOR vector);
+    float Evaluate(VECTOR vector);
 
 private:
     void Randomize(int seed);

@@ -121,7 +121,6 @@
   <ItemGroup>
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="Noise.cpp" />
-    <ClCompile Include="TerrainFace.cpp" />
     <ClCompile Include="World.cpp" />
     <ClCompile Include="DataUtil.cpp" />
     <ClCompile Include="Core.cpp" />
@@ -134,7 +133,6 @@
     <ClInclude Include="Core.h" />
     <ClInclude Include="Noise.h" />
     <ClInclude Include="Server.h" />
-    <ClInclude Include="TerrainFace.h" />
     <ClInclude Include="ThreadUtil.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="World.h" />
