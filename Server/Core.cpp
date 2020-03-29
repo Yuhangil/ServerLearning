@@ -2,6 +2,9 @@
 #include "DataUtil.h"
 #include "ThreadUtil.h"
 #include <stdio.h>
+#include <queue>
+
+using namespace std;
 
 CCore::CCore() :
 	index(0),
@@ -118,7 +121,7 @@ int CCore::Listen()
 	SOCKET hClient = INVALID_SOCKET;
 	SOCKADDR_IN tClientAddr = {};
 
-	char msgBuffer[PACKET_SIZE] = {};	// 클라이언트->서버 버퍼
+	char msgBuffer[PACKET_SIZE * 10] = {};	// 클라이언트->서버 버퍼
 	char buffer[PACKET_SIZE] = {};		// 서버->클라이언트 버퍼
 
 	while (1)
@@ -214,115 +217,124 @@ int CCore::Listen()
 			memset(msgBuffer, 0, sizeof(msgBuffer));
 			const wchar_t* ad;
 			int iReceiveBytes = recv(sockets[eventIndex - WSA_WAIT_EVENT_0]->socket, msgBuffer, sizeof(msgBuffer), 0);
-			int iHeader = CDataUtil::GetHeader(msgBuffer);
+			int i = 0;
+			while (iReceiveBytes > 0)
+			{
+				char SizeBuffer[1024] = {};
+				memcpy(SizeBuffer, msgBuffer + i * 1024, 1024);
+				iReceiveBytes -= 1024;
+				i++;
 
-			if ((iHeader & 0xFFFF0000) != 0xD93D0000)
-			{
-				printf("우리 패킷이 아님 %x\n", iHeader);
-			}
-			else
-			{
-				int clientID = eventIndex - WSA_WAIT_EVENT_0;
-				//printf("%d\n", Client_ID);
-				sockets[clientID]->last_send = clock();
-				//printf("플래그는 : %u\n", header & 0xFF);
-				switch (iHeader & 0xFFFF)
+				int iHeader = CDataUtil::GetHeader(SizeBuffer);
+
+				if ((iHeader & 0xFFFF0000) != 0xD93D0000)
 				{
-				case 3: {	// UpdatePlayerPos
-					CDataUtil::GetPlayerPos(msgBuffer + 8, sockets, clientID);
-					CDataUtil::SetData(buffer, sizeof(buffer), 3, clientID, sockets);
-					Send_All(buffer, sizeof(buffer), clientID);
-					break;
+					printf("우리 패킷이 아님 %x\n", iHeader);
 				}
-				case 4:	{	// build something
-					unsigned int structureID;
-					VECTOR_INT pos;
-					_SIZE size;
-					CDataUtil::Get4Bytes(msgBuffer + 8, &structureID, sizeof(structureID));
-					CDataUtil::Get4Bytes(msgBuffer + 12, &pos.x, sizeof(pos.x));
-					CDataUtil::Get4Bytes(msgBuffer + 16, &pos.z, sizeof(pos.z));
-					CDataUtil::Get4Bytes(msgBuffer + 20, &size.x, sizeof(size.x));
-					CDataUtil::Get4Bytes(msgBuffer + 24, &size.z, sizeof(size.z));
-
-					printf("건물 건설 %u %d %d %d %d\n", structureID, pos.x, pos.z, size.x, size.z);
-
-					if (world->AddStructure({ structureID, pos, size }))
+				else
+				{
+					int clientID = eventIndex - WSA_WAIT_EVENT_0;
+					//printf("%d\n", Client_ID);
+					sockets[clientID]->last_send = clock();
+					//printf("플래그는 : %u\n", header & 0xFF);
+					switch (iHeader & 0xFFFF)
 					{
-						memset(buffer, 0, sizeof(buffer));
-						int header = CDataUtil::SetHeader(4);
-
-						memcpy(buffer, &header, sizeof(header));
-						memcpy(buffer + sizeof(header), &clientID, sizeof(clientID));
-						memcpy(buffer + 8, &structureID, sizeof(structureID));
-						memcpy(buffer + 12, &pos.x, sizeof(pos.x));
-						memcpy(buffer + 16, &pos.z, sizeof(pos.z));
-						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+					case 3: {	// UpdatePlayerPos
+						CDataUtil::GetPlayerPos(SizeBuffer + 8, sockets, clientID);
+						CDataUtil::SetData(buffer, sizeof(buffer), 3, clientID, sockets);
 						Send_All(buffer, sizeof(buffer), clientID);
+						break;
 					}
-					else
-					{
-						fprintf(stderr, "Flag4 AddStructure() 실패\n");
+					case 4: {	// build something
+						unsigned int structureID;
+						VECTOR_INT pos;
+						_SIZE size;
+						CDataUtil::Get4Bytes(SizeBuffer + 8, &structureID, sizeof(structureID));
+						CDataUtil::Get4Bytes(SizeBuffer + 12, &pos.x, sizeof(pos.x));
+						CDataUtil::Get4Bytes(SizeBuffer + 16, &pos.z, sizeof(pos.z));
+						CDataUtil::Get4Bytes(SizeBuffer + 20, &size.x, sizeof(size.x));
+						CDataUtil::Get4Bytes(SizeBuffer + 24, &size.z, sizeof(size.z));
+
+						printf("건물 건설 %u %d %d %d %d\n", structureID, pos.x, pos.z, size.x, size.z);
+
+						if (world->AddStructure({ structureID, pos, size }))
+						{
+							memset(buffer, 0, sizeof(buffer));
+							int header = CDataUtil::SetHeader(4);
+
+							memcpy(buffer, &header, sizeof(header));
+							memcpy(buffer + sizeof(header), &clientID, sizeof(clientID));
+							memcpy(buffer + 8, &structureID, sizeof(structureID));
+							memcpy(buffer + 12, &pos.x, sizeof(pos.x));
+							memcpy(buffer + 16, &pos.z, sizeof(pos.z));
+							send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+							Send_All(buffer, sizeof(buffer), clientID);
+						}
+						else
+						{
+							fprintf(stderr, "Flag4 AddStructure() 실패\n");
+						}
+
+						break;
 					}
+					case 5: {	// itemdrop
+						unsigned int itemID;
+						VECTOR pos;
+						CDataUtil::Get4Bytes(SizeBuffer + 8, &itemID, sizeof(itemID));
+						CDataUtil::Get4Bytes(SizeBuffer + 12, &pos.x, sizeof(pos.x));
+						CDataUtil::Get4Bytes(SizeBuffer + 16, &pos.z, sizeof(pos.z));
+						/*
 
-					break;
-				}
-				case 5: {	// itemdrop
-					unsigned int itemID;
-					VECTOR pos;
-					CDataUtil::Get4Bytes(msgBuffer + 8, &itemID, sizeof(itemID));
-					CDataUtil::Get4Bytes(msgBuffer + 12, &pos.x, sizeof(pos.x));
-					CDataUtil::Get4Bytes(msgBuffer + 16, &pos.z, sizeof(pos.z));
-					/*
-
-					if (world->AddItemDrop({itemID, tPos}))
-					{
-						memset(buffer, 0, sizeof(buffer));
-						int header = CDataUtil::SetHeader(5);
-						memcpy(buffer, &header, sizeof(header));
-						memcpy(buffer + sizeof(header), &iClientID, sizeof(iClientID));
-						memcpy(buffer + 8, &itemID, sizeof(itemID));
-						memcpy(buffer + 12, &Pos.x, sizeof(Pos.x));
-						memcpy(buffer + 16, &Pos.z, sizeof(Pos.z));
-						send(m_sockets[iClientID]->socket, buffer, sizeof(buffer), 0);
-						Send_All(buffer, sizeof(buffer), iClientID);
+						if (world->AddItemDrop({itemID, tPos}))
+						{
+							memset(buffer, 0, sizeof(buffer));
+							int header = CDataUtil::SetHeader(5);
+							memcpy(buffer, &header, sizeof(header));
+							memcpy(buffer + sizeof(header), &iClientID, sizeof(iClientID));
+							memcpy(buffer + 8, &itemID, sizeof(itemID));
+							memcpy(buffer + 12, &Pos.x, sizeof(Pos.x));
+							memcpy(buffer + 16, &Pos.z, sizeof(Pos.z));
+							send(m_sockets[iClientID]->socket, buffer, sizeof(buffer), 0);
+							Send_All(buffer, sizeof(buffer), iClientID);
+						}
+						else
+						{
+							fprintf(stderr, "Flag5 AddItemDrop() 실패\n");
+						}
+						*/
+						break;
 					}
-					else
-					{
-						fprintf(stderr, "Flag5 AddItemDrop() 실패\n");
+					case 6: {
+
+						break;
 					}
-					*/
-					break; 
-				}
-				case 6: {
-					
-					break; 
-				}
-				case 7: {
-					int chunkX;
-					int chunkZ;
-					CDataUtil::Get4Bytes(msgBuffer + 8, &chunkX, sizeof(chunkX));
-					CDataUtil::Get4Bytes(msgBuffer + 12, &chunkZ, sizeof(chunkZ));
+					case 7: {
+						int chunkX;
+						int chunkZ;
+						CDataUtil::Get4Bytes(SizeBuffer + 8, &chunkX, sizeof(chunkX));
+						CDataUtil::Get4Bytes(SizeBuffer + 12, &chunkZ, sizeof(chunkZ));
 
-					printf("Receive Chunk Data[%d, %d]\n", chunkX, chunkZ);
-					for (int i = 0; i < CHUNK_SIZE; i++)
-					{
-						memset(buffer, 0, sizeof(buffer));
-						int header = CDataUtil::SetHeader(7);
+						printf("Receive Chunk Data[%d, %d]\n", chunkX, chunkZ);
+						for (int i = 0; i < CHUNK_SIZE; i++)
+						{
+							memset(buffer, 0, sizeof(buffer));
+							int header = CDataUtil::SetHeader(7);
 
-						memcpy(buffer, &header, sizeof(header));
-						memcpy(buffer + sizeof(header), &clientID, sizeof(clientID));
-						memcpy(buffer + 8, &chunkX, sizeof(chunkX));
-						memcpy(buffer + 12, &chunkZ, sizeof(chunkZ));
-						memcpy(buffer + 16, &i, sizeof(i));
-						memcpy(buffer + 20, &world->GetChunk(chunkX,chunkZ)->terrainData[i], sizeof(unsigned int) * CHUNK_SIZE);
+							memcpy(buffer, &header, sizeof(header));
+							memcpy(buffer + sizeof(header), &clientID, sizeof(clientID));
+							memcpy(buffer + 8, &chunkX, sizeof(chunkX));
+							memcpy(buffer + 12, &chunkZ, sizeof(chunkZ));
+							memcpy(buffer + 16, &i, sizeof(i));
+							memcpy(buffer + 20, &world->GetChunk(chunkX, chunkZ)->terrainData[i], sizeof(unsigned int) * CHUNK_SIZE);
 
-						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+							send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+						}
+
+						break;
 					}
-
-					break;
-				}
-				case 0xFF:		// String Message
-					break;
+					case 0xFF:		// String Message
+						break;
+					}
 				}
 			}
 		}
