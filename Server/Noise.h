@@ -41,9 +41,6 @@ public :
     ~CNoise();
 
 public:
-	float GetValue(VECTOR vector);
-
-private:
     float Evaluate(VECTOR vector);
 
 private:

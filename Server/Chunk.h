@@ -4,7 +4,7 @@
 class CChunk
 {
 public:
-	unsigned int terrainData[CHUNK_SIZE][CHUNK_SIZE];
+	float terrainData[CHUNK_SIZE][CHUNK_SIZE];
 	VECTOR_INT coord;
 
 public:

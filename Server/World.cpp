@@ -47,27 +47,65 @@ bool CWorld::AddStructure(STRUCTURE_DATA tStructureData)
 void CWorld::CreateWorld(int seed)
 {
 	CNoise* noise = new CNoise(seed);
-	int strength = 10;
 
 	for (int i = 0; i < CHUNKS_PER_WORLD; i++)
 		for (int j = 0; j < CHUNKS_PER_WORLD; j++)
 			chunks[i][j] = new CChunk(VECTOR_INT(j, i));
 
+	//Noise Setting
+	float roughness = 2.34;
+	float persistence = 0.54;
+	float scale = 75;
+
+	//Noise Info
 	int size = CHUNKS_PER_WORLD * CHUNK_SIZE;
+	float noiseMaxValue = 0;
+	float noiseMinValue = 1e9;
+
+	float halfSize = size / 2.f;
+
 	for (int z = 0; z < size; z++)
 	{
 		for (int x = 0; x < size; x++)
 		{
+			float noiseValue = 0;
+			float frequency = 1;
+			float amplitude = 1;
+
+			for (int i = 0; i < 3; i++)
+			{
+				float _x = (x - halfSize) / scale * frequency;
+				float _z = (z - halfSize) / scale * frequency;
+
+				float v = noise->Evaluate(VECTOR(_x, _z, 0));
+				noiseValue += (v + 1) * .5f * amplitude;
+				frequency *= roughness;
+				amplitude *= persistence;
+			}
+
+			if (noiseMaxValue < noiseValue)
+				noiseMaxValue = noiseValue;
+			if (noiseMinValue > noiseValue)
+				noiseMinValue = noiseValue;
+
+			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE] = noiseValue;
+		}
+	}
+
+	for (int z = 0; z < size; z++)
+	{
+		for (int x = 0; x < size; x++)
+		{
+			float v = chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE];
+			v = v / (noiseMaxValue - noiseMinValue);
+
 			float falloffValue = max(abs(z / (float)size * 2 - 1), abs(x / (float)size * 2 - 1));
 			falloffValue = FalloffModify(falloffValue);
-			
-			float noiseValue = noise->GetValue(VECTOR((float)x / (size - 1), (float)z / (size - 1)));
-			noiseValue -= falloffValue;
-			if (noiseValue < 0)
-				noiseValue = 0;
-			noiseValue *= strength;
+			v -= falloffValue;
+			if (v < 0)
+				v = 0;
 
-			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE] = (int)noiseValue;
+			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE] = v;
 		}
 	}
 

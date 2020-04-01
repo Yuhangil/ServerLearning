@@ -217,6 +217,7 @@ int CCore::Listen()
 			memset(msgBuffer, 0, sizeof(msgBuffer));
 			const wchar_t* ad;
 			int iReceiveBytes = recv(sockets[eventIndex - WSA_WAIT_EVENT_0]->socket, msgBuffer, sizeof(msgBuffer), 0);
+			//printf("RecieveBytes: %d\n", iReceiveBytes);
 			int i = 0;
 			while (iReceiveBytes > 0)
 			{
@@ -325,7 +326,7 @@ int CCore::Listen()
 							memcpy(buffer + 8, &chunkX, sizeof(chunkX));
 							memcpy(buffer + 12, &chunkZ, sizeof(chunkZ));
 							memcpy(buffer + 16, &i, sizeof(i));
-							memcpy(buffer + 20, &world->GetChunk(chunkX, chunkZ)->terrainData[i], sizeof(unsigned int) * CHUNK_SIZE);
+							memcpy(buffer + 20, &world->GetChunk(chunkX, chunkZ)->terrainData[i], sizeof(float) * CHUNK_SIZE);
 
 							send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
 						}
