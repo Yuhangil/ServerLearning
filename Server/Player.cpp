@@ -14,32 +14,32 @@ CPlayer::~CPlayer()
 
 void CPlayer::ModifyItemData(int slotID, int id, int amount)
 {
-	items[slotID].id = id;
-	items[slotID].amount = amount;
-}
-
-void CPlayer::SwapItemData(int srcSlotID, int dstSlotID)
-{
-	ITEM_DATA tmp = items[srcSlotID];
-	if (dstSlotID >= INV_ROW * INV_COLUMN)
+	if (slotID >= INV_ROW * INV_COLUMN)
 	{
-		dstSlotID -= INV_ROW * INV_COLUMN;
-		if (dstSlotID == 0)
+		if (slotID - INV_ROW * INV_COLUMN == 0)
 		{
-			items[srcSlotID] = handL;
-			handL = tmp;
+			handL.id = id;
+			handL.amount = amount;
 		}
 		else
 		{
-			items[srcSlotID] = handR;
-			handR = tmp;
+			handR.id = id;
+			handR.amount = amount;
 		}
 	}
 	else
 	{
-		items[srcSlotID] = items[dstSlotID];
-		items[dstSlotID] = tmp;
+		items[slotID].id = id;
+		items[slotID].amount = amount;
 	}
+}
+
+void CPlayer::SwapItemData(int srcSlotID, int dstSlotID)
+{
+	ITEM_DATA src = GetItemData(srcSlotID);
+	ITEM_DATA dst = GetItemData(dstSlotID);
+	ModifyItemData(srcSlotID, dst.id, dst.amount);
+	ModifyItemData(dstSlotID, src.id, src.amount);
 }
 
 ITEM_DATA CPlayer::GetItemData(int slotID) const

@@ -313,6 +313,8 @@ int CCore::Listen()
 						memcpy(buffer + 12, &itemID, sizeof(itemID));
 						memcpy(buffer + 16, &itemAmount, sizeof(itemAmount));
 						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+						if (slotID >= INV_ROW * INV_COLUMN)
+							Send_All(buffer, sizeof(buffer), clientID);
 
 						break;
 					}
@@ -340,6 +342,8 @@ int CCore::Listen()
 						memcpy(buffer + 12, &item.id, sizeof(item.id));
 						memcpy(buffer + 16, &item.amount, sizeof(item.amount));
 						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+						if (dstSlotID >= INV_ROW * INV_COLUMN)
+							Send_All(buffer, sizeof(buffer), clientID);
 						break;
 					}
 					case 7: {
