@@ -173,9 +173,10 @@ int CCore::Listen()
 
 			sockets[index] = (SOCKET_INFO*)calloc(1, sizeof(SOCKET_INFO));
 			sockets[index]->socket = hClient;
-			sockets[index]->P_DATA.client_id = index;
 			sockets[index]->last_send = clock();
 			events[index] = WSACreateEvent();
+			players[index] = new CPlayer(index);
+
 			if (events[index] == WSA_INVALID_EVENT)
 			{
 				fprintf(stderr, "Event Create Fail\n");
@@ -221,12 +222,12 @@ int CCore::Listen()
 			int i = 0;
 			while (iReceiveBytes > 0)
 			{
-				char SizeBuffer[1024] = {};
-				memcpy(SizeBuffer, msgBuffer + i * 1024, 1024);
+				char sizeBuffer[1024] = {};
+				memcpy(sizeBuffer, msgBuffer + i * 1024, 1024);
 				iReceiveBytes -= 1024;
 				i++;
 
-				int iHeader = CDataUtil::GetHeader(SizeBuffer);
+				int iHeader = CDataUtil::GetHeader(sizeBuffer);
 
 				if ((iHeader & 0xFFFF0000) != 0xD93D0000)
 				{
@@ -241,8 +242,26 @@ int CCore::Listen()
 					switch (iHeader & 0xFFFF)
 					{
 					case 3: {	// UpdatePlayerPos
-						CDataUtil::GetPlayerPos(SizeBuffer + 8, sockets, clientID);
-						CDataUtil::SetData(buffer, sizeof(buffer), 3, clientID, sockets);
+
+						VECTOR pre = players[clientID]->pos;
+
+						CDataUtil::GetBytes(sizeBuffer + 8,
+							&((players[clientID])->pos), sizeof((players[clientID])->pos));
+						CDataUtil::GetBytes(sizeBuffer + 8 + sizeof(players[clientID]->pos),
+							&((players[clientID])->velocity), sizeof((players[clientID])->velocity));
+
+						if (pre % CHUNK_SIZE != players[clientID]->pos % CHUNK_SIZE)
+						{
+							world->GetChunkByCoord(pre% CHUNK_SIZE)->active = false;
+							world->GetChunkByCoord(players[clientID]->pos% CHUNK_SIZE)->active = true;
+						}
+
+						CDataUtil::ContactHeader(buffer, clientID, 3);
+						memcpy(buffer + 4,
+							&players[clientID]->pos, sizeof(players[clientID]->pos));
+						memcpy(buffer + 4 + sizeof(players[clientID]->pos),
+							&players[clientID]->velocity, sizeof(players[clientID]->velocity));
+
 						Send_All(buffer, sizeof(buffer), clientID);
 						break;
 					}
@@ -250,21 +269,19 @@ int CCore::Listen()
 						unsigned int structureID;
 						VECTOR_INT pos;
 						_SIZE size;
-						CDataUtil::Get4Bytes(SizeBuffer + 8, &structureID, sizeof(structureID));
-						CDataUtil::Get4Bytes(SizeBuffer + 12, &pos.x, sizeof(pos.x));
-						CDataUtil::Get4Bytes(SizeBuffer + 16, &pos.z, sizeof(pos.z));
-						CDataUtil::Get4Bytes(SizeBuffer + 20, &size.x, sizeof(size.x));
-						CDataUtil::Get4Bytes(SizeBuffer + 24, &size.z, sizeof(size.z));
+						CDataUtil::GetBytes(sizeBuffer + 8, &structureID, sizeof(structureID));
+						CDataUtil::GetBytes(sizeBuffer + 12, &pos.x, sizeof(pos.x));
+						CDataUtil::GetBytes(sizeBuffer + 16, &pos.z, sizeof(pos.z));
+						CDataUtil::GetBytes(sizeBuffer + 20, &size.x, sizeof(size.x));
+						CDataUtil::GetBytes(sizeBuffer + 24, &size.z, sizeof(size.z));
 
 						printf("건물 건설 %u %d %d %d %d\n", structureID, pos.x, pos.z, size.x, size.z);
 
 						if (world->AddStructure({ structureID, pos, size }))
 						{
-							memset(buffer, 0, sizeof(buffer));
-							int header = CDataUtil::SetHeader(4);
 
-							memcpy(buffer, &header, sizeof(header));
-							memcpy(buffer + sizeof(header), &clientID, sizeof(clientID));
+							CDataUtil::ContactHeader(buffer, clientID, 4);
+
 							memcpy(buffer + 8, &structureID, sizeof(structureID));
 							memcpy(buffer + 12, &pos.x, sizeof(pos.x));
 							memcpy(buffer + 16, &pos.z, sizeof(pos.z));
@@ -278,55 +295,72 @@ int CCore::Listen()
 
 						break;
 					}
-					case 5: {	// itemdrop
-						unsigned int itemID;
-						VECTOR pos;
-						CDataUtil::Get4Bytes(SizeBuffer + 8, &itemID, sizeof(itemID));
-						CDataUtil::Get4Bytes(SizeBuffer + 12, &pos.x, sizeof(pos.x));
-						CDataUtil::Get4Bytes(SizeBuffer + 16, &pos.z, sizeof(pos.z));
-						/*
+					case 5: {	// Inventory
+						int slotID;
+						int itemID;
+						int itemAmount;
+						CDataUtil::GetBytes(sizeBuffer + 8, &slotID, sizeof(slotID));
+						CDataUtil::GetBytes(sizeBuffer + 12, &itemID, sizeof(itemID));
+						CDataUtil::GetBytes(sizeBuffer + 16, &itemAmount, sizeof(itemAmount));
 
-						if (world->AddItemDrop({itemID, tPos}))
-						{
-							memset(buffer, 0, sizeof(buffer));
-							int header = CDataUtil::SetHeader(5);
-							memcpy(buffer, &header, sizeof(header));
-							memcpy(buffer + sizeof(header), &iClientID, sizeof(iClientID));
-							memcpy(buffer + 8, &itemID, sizeof(itemID));
-							memcpy(buffer + 12, &Pos.x, sizeof(Pos.x));
-							memcpy(buffer + 16, &Pos.z, sizeof(Pos.z));
-							send(m_sockets[iClientID]->socket, buffer, sizeof(buffer), 0);
-							Send_All(buffer, sizeof(buffer), iClientID);
-						}
-						else
-						{
-							fprintf(stderr, "Flag5 AddItemDrop() 실패\n");
-						}
-						*/
+						CDataUtil::DumpPacket(sizeBuffer, 6);
+
+						//printf("Player[%d]: AddItem(%d, %d) In Slot(%d), Flag: %d\n", clientID, itemID, itemAmount,slotID, invFlag);
+						players[clientID]->ModifyItemData(slotID, itemID, itemAmount);
+
+						CDataUtil::ContactHeader(buffer, clientID, 5);
+						memcpy(buffer + 8, &slotID, sizeof(slotID));
+						memcpy(buffer + 12, &itemID, sizeof(itemID));
+						memcpy(buffer + 16, &itemAmount, sizeof(itemAmount));
+						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+
 						break;
 					}
 					case 6: {
 
+						int srcSlotID;
+						int dstSlotID;
+						ITEM_DATA item;
+
+						CDataUtil::GetBytes(sizeBuffer + 8, &srcSlotID, sizeof(srcSlotID));
+						CDataUtil::GetBytes(sizeBuffer + 12, &dstSlotID, sizeof(dstSlotID));
+
+						players[clientID]->SwapItemData(srcSlotID, dstSlotID);
+
+						CDataUtil::ContactHeader(buffer, clientID, 5);
+
+						item = players[clientID]->GetItemData(srcSlotID);
+						memcpy(buffer + 8, &srcSlotID, sizeof(srcSlotID));
+						memcpy(buffer + 12, &item.id, sizeof(item.id));
+						memcpy(buffer + 16, &item.amount, sizeof(item.amount));
+						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
+
+						item = players[clientID]->GetItemData(dstSlotID);
+						memcpy(buffer + 8, &dstSlotID, sizeof(dstSlotID));
+						memcpy(buffer + 12, &item.id, sizeof(item.id));
+						memcpy(buffer + 16, &item.amount, sizeof(item.amount));
+						send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
 						break;
 					}
 					case 7: {
 						int chunkX;
 						int chunkZ;
-						CDataUtil::Get4Bytes(SizeBuffer + 8, &chunkX, sizeof(chunkX));
-						CDataUtil::Get4Bytes(SizeBuffer + 12, &chunkZ, sizeof(chunkZ));
+						CDataUtil::GetBytes(sizeBuffer + 8, &chunkX, sizeof(chunkX));
+						CDataUtil::GetBytes(sizeBuffer + 12, &chunkZ, sizeof(chunkZ));
 
-						printf("Receive Chunk Data[%d, %d]\n", chunkX, chunkZ);
+						//printf("Receive Chunk Data[%d, %d]\n", chunkX, chunkZ);
 						for (int i = 0; i < CHUNK_SIZE; i++)
 						{
-							memset(buffer, 0, sizeof(buffer));
-							int header = CDataUtil::SetHeader(7);
 
-							memcpy(buffer, &header, sizeof(header));
-							memcpy(buffer + sizeof(header), &clientID, sizeof(clientID));
+							CDataUtil::ContactHeader(buffer, clientID, 7);
+
 							memcpy(buffer + 8, &chunkX, sizeof(chunkX));
 							memcpy(buffer + 12, &chunkZ, sizeof(chunkZ));
 							memcpy(buffer + 16, &i, sizeof(i));
-							memcpy(buffer + 20, &world->GetChunk(chunkX, chunkZ)->terrainData[i], sizeof(float) * CHUNK_SIZE);
+
+							CChunk* chunk = world->GetChunkByCoord(chunkX, chunkZ);
+							for (int j = 0; j < CHUNK_SIZE; ++j)
+								memcpy(buffer + 20 + j * sizeof(float), &chunk->terrainData[i][j], sizeof(float));
 
 							send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
 						}

@@ -1,16 +1,5 @@
 #include "World.h"
 
-// [ X, Z ][ direction ][ rollValue ]
-// rollValue : 
-//		diceRoll[][][3]자리에 diceRoll[][][0]
-//		diceRoll[][][0]자리에 diceRoll[][][1]
-//		diceRoll[][][1]자리에 diceRoll[][][2]
-//		diceRoll[][][2]자리에 diceRoll[][][3]
-const int CWorld::diceRoll[2][2][4] = {
-	{{2, 5, 1, 0}, {1, 5, 2, 0}},
-	{{3, 5, 4, 0}, {4, 5, 3, 0}}
-};
-
 CWorld::CWorld():
 	active(true)
 {
@@ -24,22 +13,55 @@ CWorld::~CWorld()
 			delete chunks[i][j];
 }
 
-CChunk* CWorld::GetChunk(int x, int z)
+void CWorld::Update()
 {
-	if (x < 0 || z < 0 || x >= CHUNKS_PER_WORLD || z >= CHUNKS_PER_WORLD)
-		return nullptr;
-	return chunks[z][x];
+
+	for (auto obj = objects.begin(); obj != objects.end(); obj++)
+	{
+		if (chunks[(*obj)->chunkX][(*obj)->chunkZ]->active)
+			(*obj)->Update();
+	}
 }
 
-bool CWorld::AddStructure(STRUCTURE_DATA tStructureData)
+CChunk* CWorld::GetChunkByCoord(int chunkX, int chunkZ)
 {
-	for (int z = 0; z < tStructureData.size.z; z++)
+	if (chunkX < 0 || chunkZ < 0 || chunkX >= CHUNKS_PER_WORLD || chunkZ >= CHUNKS_PER_WORLD)
+		return nullptr;
+	return chunks[chunkZ][chunkX];
+}
+
+CChunk* CWorld::GetChunkByCoord(VECTOR_INT coord)
+{
+	return GetChunkByCoord(coord.x,coord.z);
+}
+
+CChunk* CWorld::GetChunkByWorldPos(VECTOR_INT pos)
+{
+	int x = pos.x / CHUNK_SIZE;
+	int z = pos.z / CHUNK_SIZE;
+	return GetChunkByCoord(x, z);
+}
+
+bool CWorld::AddStructure(STRUCTURE_DATA stData)
+{
+	for (int z = 0; z < stData.size.z; z++)
 	{
-		for (int x = 0; x < tStructureData.size.x; x++)
+		for (int x = 0; x < stData.size.x; x++)
 		{
-			
+			VECTOR_INT next = VECTOR_INT(stData.pos.x + x, stData.pos.z + z);
+			if (GetChunkByWorldPos(next)->GetTerrainData(next).structure != 0)
+				return false;
 		}
 	}
+	for (int z = 0; z < stData.size.z; z++)
+	{
+		for (int x = 0; x < stData.size.x; x++)
+		{
+			VECTOR_INT next = VECTOR_INT(stData.pos.x + x, stData.pos.z + z);
+			GetChunkByWorldPos(next)->SetStructureByWorldPos(next, stData.structure_id);
+		}
+	}
+
 
 	return true;
 }
@@ -88,7 +110,7 @@ void CWorld::CreateWorld(int seed)
 			if (noiseMinValue > noiseValue)
 				noiseMinValue = noiseValue;
 
-			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE] = noiseValue;
+			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE].noise = noiseValue;
 		}
 	}
 
@@ -96,7 +118,7 @@ void CWorld::CreateWorld(int seed)
 	{
 		for (int x = 0; x < size; x++)
 		{
-			float v = chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE];
+			float v = chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE].noise;
 			v = v / (noiseMaxValue - noiseMinValue);
 
 			float falloffValue = max(abs(z / (float)size * 2 - 1), abs(x / (float)size * 2 - 1));
@@ -105,7 +127,7 @@ void CWorld::CreateWorld(int seed)
 			if (v < 0)
 				v = 0;
 
-			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE] = v;
+			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE].noise = v;
 		}
 	}
 

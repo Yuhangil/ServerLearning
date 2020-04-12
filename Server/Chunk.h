@@ -4,14 +4,20 @@
 class CChunk
 {
 public:
-	float terrainData[CHUNK_SIZE][CHUNK_SIZE];
+	TERRAIN_INFO terrainData[CHUNK_SIZE][CHUNK_SIZE];
 	VECTOR_INT coord;
+	bool active;
 
 public:
 	CChunk(VECTOR_INT coord);
 	~CChunk();
 
 public:
-	bool SetStructureByWorldPos(STRUCTURE_DATA structureData);
+	void Update();
+
+public:
+	bool SetStructureByWorldPos(VECTOR_INT worldPos, unsigned int structure_id);
+	TERRAIN_INFO GetTerrainData(VECTOR_INT worldPos);
+
 };
 

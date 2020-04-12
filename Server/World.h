@@ -3,14 +3,14 @@
 #include "Server.h"
 #include "Noise.h"
 #include "Chunk.h"
+#include "Object.h"
 
 class CWorld
 {
 private:
-	static const int diceRoll[2][2][4];
-private:
 	std::vector<STRUCTURE_DATA> structures;
 	CChunk* chunks[CHUNKS_PER_WORLD][CHUNKS_PER_WORLD];
+	std::vector<CObject*> objects;
 
 public:
 	bool active;
@@ -21,9 +21,12 @@ public:
 	~CWorld();
 
 public:
-	CChunk* GetChunk(int x, int z);
+	void Update();
 
 public:
+	CChunk* GetChunkByCoord(int chunkX, int chunkZ);
+	CChunk* GetChunkByCoord(VECTOR_INT coord);
+	CChunk* GetChunkByWorldPos(VECTOR_INT pos);
 	bool AddStructure(STRUCTURE_DATA tStructureData);
 	
 private:

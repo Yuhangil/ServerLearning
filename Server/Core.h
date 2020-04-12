@@ -1,6 +1,7 @@
 #pragma once
 #include "Server.h"
 #include "World.h"
+#include "Player.h"
 
 class CCore
 {
@@ -10,6 +11,7 @@ public:
 public:
 	WSAEVENT events[WSA_MAXIMUM_WAIT_EVENTS];
 	SOCKET_INFO* sockets[WSA_MAXIMUM_WAIT_EVENTS];
+	CPlayer* players[WSA_MAXIMUM_WAIT_EVENTS];
 	SOCKET hListen;
 	int eventIndex;
 

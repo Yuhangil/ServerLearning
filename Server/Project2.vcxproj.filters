@@ -22,6 +22,12 @@
     <Filter Include="03. World">
       <UniqueIdentifier>{2cb2a241-d90b-424b-9af4-c6fc97cff39e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="04. Object">
+      <UniqueIdentifier>{708d6594-7f1c-44cb-b272-dd68d0afe137}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="05. Other">
+      <UniqueIdentifier>{1bcb6374-c5e1-46ae-839d-f7beda2e37a9}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.cpp">
@@ -44,6 +50,12 @@
     </ClCompile>
     <ClCompile Include="Chunk.cpp">
       <Filter>03. World</Filter>
+    </ClCompile>
+    <ClCompile Include="Object.cpp">
+      <Filter>04. Object</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>04. Object</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -70,6 +82,12 @@
     </ClInclude>
     <ClInclude Include="Chunk.h">
       <Filter>03. World</Filter>
+    </ClInclude>
+    <ClInclude Include="Object.h">
+      <Filter>04. Object</Filter>
+    </ClInclude>
+    <ClInclude Include="Player.h">
+      <Filter>04. Object</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
