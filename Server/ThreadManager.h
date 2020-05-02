@@ -1,14 +1,20 @@
 #pragma once
 #include "Server.h"
 
-class CThreadUtil
+class CThreadManager
 {
 public :
-	static HANDLE hMutex;
+	HANDLE hMutex;
+
+public: 
+	CThreadManager();
+	~CThreadManager();
 
 public:
-	static int MakeThread(HANDLE* hThread, DWORD* dwThreadID, unsigned (*ThreadFunction)(void*), void* ArgList);
-	static int InitMutex();
+	int MakeThread(HANDLE* hThread, DWORD* dwThreadID, unsigned (*ThreadFunction)(void*), void* ArgList);
+
+private:
+	int InitMutex();
 };
 
 

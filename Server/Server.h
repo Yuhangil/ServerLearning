@@ -8,6 +8,7 @@
 #pragma comment(lib, "ws2_32")
 
 #include "Types.h"
+#include "Macro.h"
 
 #define PORT 8282 // 임의의 포트
 #define PACKET_SIZE 1024 // 임의
@@ -17,3 +18,20 @@
 
 #define INV_ROW 5
 #define INV_COLUMN 10
+
+#define MAX_OBJECT 65535
+
+template <typename T>
+void Safe_Delete_Vector(typename T& p)
+{
+	typename T::iterator iter;
+	typename T::iterator iterEnd = p.end();
+
+	for (iter = p.begin(); iter != iterEnd; iter++)
+	{
+		SAFE_DELETE((*iter));
+	}
+
+	p.clear();
+
+}

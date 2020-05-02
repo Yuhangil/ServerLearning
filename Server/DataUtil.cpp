@@ -21,33 +21,6 @@ int CDataUtil::GetHeader(char* MessageBuffer)
 	return header;
 }
 
-void CDataUtil::SetData(char* buffer, size_t buffersize, int flags, int Client_ID, SOCKET_INFO* Sockets[])
-{
-	memset(buffer, 0, buffersize);
-	int header = SetHeader(flags);
-
-	memcpy(buffer, &header, sizeof(header));
-	memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
-	if (flags == 1)		// connection 클라이언트에게 자신의 id번호를 전달
-	{
-	}
-	else if (flags == 2)	// CLIENT_ID 클라이언트의 종료로 인해 다른 클라이언트에게 종료를 알림
-	{
-	}
-	else if (flags == 3)
-	{/*
-		memcpy(buffer + 8, &((Sockets[Client_ID]->P_DATA).pos.x), sizeof((Sockets[Client_ID]->P_DATA).pos.x));
-		memcpy(buffer + 12, &((Sockets[Client_ID]->P_DATA).pos.y), sizeof((Sockets[Client_ID]->P_DATA).pos.y));
-		memcpy(buffer + 16, &((Sockets[Client_ID]->P_DATA).pos.z), sizeof((Sockets[Client_ID]->P_DATA).pos.z));
-		memcpy(buffer + 20, &((Sockets[Client_ID]->P_DATA).velocity.x), sizeof((Sockets[Client_ID]->P_DATA).velocity.x));
-		memcpy(buffer + 24, &((Sockets[Client_ID]->P_DATA).velocity.y), sizeof((Sockets[Client_ID]->P_DATA).velocity.y));
-		memcpy(buffer + 28, &((Sockets[Client_ID]->P_DATA).velocity.z), sizeof((Sockets[Client_ID]->P_DATA).velocity.z));*/
-	}
-	else if (flags == 4)
-	{
-		// memcpy(buffer + sizeof(header), &Client_ID, sizeof(Client_ID));
-	}
-}
 
 int CDataUtil::SetHeader(int iflags)
 {

@@ -187,7 +187,8 @@ typedef struct SOCKET_INFO
 
 typedef struct TERRAIN_INFO
 {
-	float noise;
+	float main;
+	float* otherBiomes;
 	int structure;
 }TERRAIN_INFO;
 

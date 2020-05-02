@@ -1,7 +1,9 @@
 #pragma once
 #include "Server.h"
-#include "World.h"
 #include "Player.h"
+#include "DataUtil.h"
+#include "ThreadManager.h"
+#include "World.h"
 
 class CCore
 {
@@ -17,11 +19,8 @@ public:
 
 private:
 	int addrlen;
-	CWorld* world;
-
-public:
-	CCore();
-	~CCore();
+	std::vector<CWorld*> worlds;
+	CThreadManager* threadManager;
 
 public:
 	bool Init();
@@ -33,5 +32,13 @@ private:
 	void SetSOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr);
 	void TimeOut();
 	void CloseSocket(int CloseSocketIndex);
-};
 
+private:
+	bool AddWorld(int seed);
+
+public:
+	static unsigned int WorldUpdate(LPVOID p);
+
+	DECLARE_SINGLE(CCore)
+
+};

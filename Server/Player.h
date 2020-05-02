@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Server.h"
-#include "Object.h"
+#include "MoveObject.h"
 
 class CPlayer :
-	public CObject
+	public CMoveObject
 {
 public:
 	char playername[31];
@@ -14,7 +14,7 @@ public:
 	ITEM_DATA handR;
 
 public :
-	CPlayer(int _client_id);
+	CPlayer(unsigned int objectCountID, int _client_id, int _maxHealth, int _maxStamina, VECTOR pos);
 	~CPlayer();
 
 public:

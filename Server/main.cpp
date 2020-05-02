@@ -6,13 +6,17 @@ extern HANDLE hMutex;
 
 int main()
 {
-    CCore* serverCore = new CCore();
 
-    if (serverCore->Init())
+    if (!GET_SINGLE(CCore)->Init())
     {
-        return serverCore->Listen();
+        GET_SINGLE(CCore)->DestroyInst();
+        return 0;
     }
 
+    int iRev = GET_SINGLE(CCore)->Listen();
+
+    GET_SINGLE(CCore)->DestroyInst();
+    return iRev;
 }
 
 /*

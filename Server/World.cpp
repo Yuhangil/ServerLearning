@@ -1,9 +1,12 @@
 #include "World.h"
+#include "Core.h"
+
+unsigned int CWorld::gObjectCounter = 11;
 
 CWorld::CWorld():
 	active(true)
 {
-	CreateWorld(0);
+
 }
 
 CWorld::~CWorld()
@@ -68,6 +71,27 @@ bool CWorld::AddStructure(STRUCTURE_DATA stData)
 
 void CWorld::CreateWorld(int seed)
 {
+	CreateLandScape(seed);
+	AddObject(1, VECTOR(CHUNKS_PER_WORLD * CHUNK_SIZE / 2, CHUNKS_PER_WORLD * CHUNK_SIZE / 2));
+}
+
+void CWorld::MakeObjectBuffer(char* buffer,int objectCountID,int objectID, VECTOR pos)
+{
+	CDataUtil::ContactHeader(buffer, 0, 101);
+	memcpy(buffer + 8, &objectCountID, sizeof(objectCountID));
+	memcpy(buffer + 12, &objectID, sizeof(objectID));
+	memcpy(buffer + 16, &pos.x, sizeof(pos.x));
+	memcpy(buffer + 20, &pos.y, sizeof(pos.y));
+	memcpy(buffer + 24, &pos.z, sizeof(pos.z));
+
+	switch (objectID)
+	{
+	
+	}
+}
+
+void CWorld::CreateLandScape(int seed)
+{
 	CNoise* noise = new CNoise(seed);
 
 	for (int i = 0; i < CHUNKS_PER_WORLD; i++)
@@ -110,7 +134,7 @@ void CWorld::CreateWorld(int seed)
 			if (noiseMinValue > noiseValue)
 				noiseMinValue = noiseValue;
 
-			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE].noise = noiseValue;
+			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE].main = noiseValue;
 		}
 	}
 
@@ -118,7 +142,7 @@ void CWorld::CreateWorld(int seed)
 	{
 		for (int x = 0; x < size; x++)
 		{
-			float v = chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE].noise;
+			float v = chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE].main;
 			v = v / (noiseMaxValue - noiseMinValue);
 
 			float falloffValue = max(abs(z / (float)size * 2 - 1), abs(x / (float)size * 2 - 1));
@@ -127,12 +151,32 @@ void CWorld::CreateWorld(int seed)
 			if (v < 0)
 				v = 0;
 
-			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE].noise = v;
+			chunks[z / CHUNK_SIZE][x / CHUNK_SIZE]->terrainData[z % CHUNK_SIZE][x % CHUNK_SIZE].main = v;
 		}
 	}
-
-
 	delete noise;
+}
+
+void CWorld::AddObject(int objectID,VECTOR pos)
+{
+	if (objects.size() >= MAX_OBJECT)
+	{
+		//remove Object;
+	}
+
+	int maxHealth = 100;
+	switch (objectID)
+	{
+
+	}
+	objects.push_back(new CObject(gObjectCounter, objectID, maxHealth, pos));
+
+	char buffer[PACKET_SIZE] = {};
+	MakeObjectBuffer(buffer, gObjectCounter, objectID, pos);
+
+	GET_SINGLE(CCore)->Send_All(buffer, sizeof(buffer), 0);
+
+	gObjectCounter++;
 }
 
 float CWorld::FalloffModify(float value)

@@ -4,12 +4,17 @@
 class CObject
 {
 public:
-	int chunkX, chunkZ;
+	unsigned int objectCountID;
+	int objectID;
+	int worldIdx;
+public:
+	int maxHealth;
+	int health;
 	VECTOR pos;
-	VECTOR velocity;
+	int chunkX, chunkZ;
 
 public:
-	CObject();
+	CObject(unsigned int _objectCountID, int _objectID, int _maxHealth, VECTOR _pos);
 	~CObject();
 
 public:

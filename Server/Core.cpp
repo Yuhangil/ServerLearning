@@ -1,34 +1,37 @@
 #include "Core.h"
-#include "DataUtil.h"
-#include "ThreadUtil.h"
 #include <stdio.h>
 #include <queue>
 
 using namespace std;
+
+DEFINITION_SINGLE(CCore)
 
 CCore::CCore() :
 	index(0),
 	addrlen(0),
 	hListen(INVALID_SOCKET)
 {
+	threadManager = new CThreadManager();
 }
 
 CCore::~CCore()
 {
-	if(world != NULL)
-		delete world;
+	Close();
+
+	Safe_Delete_Vector(worlds);
+	SAFE_DELETE(threadManager);
 }
 
 
 bool CCore::Init()
 {
-	// 게임 정보 초기화
-	world = new CWorld();
-	if (world == NULL)
-	{
-		puts("Create World Failed");
-		return false;
-	}
+
+	AddWorld(0);
+
+	HANDLE worldThread;
+	DWORD dwThreadID = NULL;
+	threadManager->MakeThread(&worldThread, &dwThreadID, WorldUpdate, NULL);
+	::CloseHandle(worldThread);
 
 	// 서버 소켓 초기화
 	WSADATA wsaData = {};
@@ -175,7 +178,7 @@ int CCore::Listen()
 			sockets[index]->socket = hClient;
 			sockets[index]->last_send = clock();
 			events[index] = WSACreateEvent();
-			players[index] = new CPlayer(index);
+			players[index] = new CPlayer(0, index, 100, 100,VECTOR(0,0));
 
 			if (events[index] == WSA_INVALID_EVENT)
 			{
@@ -196,7 +199,7 @@ int CCore::Listen()
 			}
 			printf("%d번 클라 입장\n", index);
 			// 새로 ACCEPT한 Client에게 ID 전달
-			CDataUtil::SetData(buffer, sizeof(buffer), 1, index, sockets);
+			CDataUtil::ContactHeader(buffer, index, 1);
 			for (int i = 1; i <= index; i++)		// 0번은 server이므로 1부터 시작
 			{
 				send(sockets[i]->socket, buffer, sizeof(buffer), 0);
@@ -205,9 +208,21 @@ int CCore::Listen()
 			for (int i = 1; i < index; i++)
 			{
 				memset(buffer, 0, sizeof(buffer));
-				CDataUtil::SetData(buffer, sizeof(buffer), 1, i, sockets);
+				CDataUtil::ContactHeader(buffer, index, 1);
 				send(sockets[index]->socket, buffer, sizeof(buffer), 0);
 			}
+
+			std::vector<CObject*> co = worlds[players[index]->worldIdx]->GetObjects();
+			std::vector<CObject*>::iterator iter;
+			std::vector<CObject*>::iterator iterEnd = co.end();
+
+			for (iter = co.begin(); iter != iterEnd; iter++)
+			{
+				CWorld::MakeObjectBuffer(buffer, (*iter)->objectCountID, (*iter)->objectID, (*iter)->pos);
+
+				send(sockets[index]->socket, buffer, sizeof(buffer), 0);
+			}
+
 			index++;
 		}
 
@@ -241,29 +256,8 @@ int CCore::Listen()
 					//printf("플래그는 : %u\n", header & 0xFF);
 					switch (iHeader & 0xFFFF)
 					{
-					case 3: {	// UpdatePlayerPos
+					case 3: {
 
-						VECTOR pre = players[clientID]->pos;
-
-						CDataUtil::GetBytes(sizeBuffer + 8,
-							&((players[clientID])->pos), sizeof((players[clientID])->pos));
-						CDataUtil::GetBytes(sizeBuffer + 8 + sizeof(players[clientID]->pos),
-							&((players[clientID])->velocity), sizeof((players[clientID])->velocity));
-
-						if (pre % CHUNK_SIZE != players[clientID]->pos % CHUNK_SIZE)
-						{
-							world->GetChunkByCoord(pre% CHUNK_SIZE)->active = false;
-							world->GetChunkByCoord(players[clientID]->pos% CHUNK_SIZE)->active = true;
-						}
-
-						CDataUtil::ContactHeader(buffer, clientID, 3);
-						memcpy(buffer + 4,
-							&players[clientID]->pos, sizeof(players[clientID]->pos));
-						memcpy(buffer + 4 + sizeof(players[clientID]->pos),
-							&players[clientID]->velocity, sizeof(players[clientID]->velocity));
-
-						Send_All(buffer, sizeof(buffer), clientID);
-						break;
 					}
 					case 4: {	// build something
 						unsigned int structureID;
@@ -277,7 +271,7 @@ int CCore::Listen()
 
 						printf("건물 건설 %u %d %d %d %d\n", structureID, pos.x, pos.z, size.x, size.z);
 
-						if (world->AddStructure({ structureID, pos, size }))
+						if (worlds[players[clientID]->worldIdx]->AddStructure({ structureID, pos, size }))
 						{
 
 							CDataUtil::ContactHeader(buffer, clientID, 4);
@@ -362,13 +356,37 @@ int CCore::Listen()
 							memcpy(buffer + 12, &chunkZ, sizeof(chunkZ));
 							memcpy(buffer + 16, &i, sizeof(i));
 
-							CChunk* chunk = world->GetChunkByCoord(chunkX, chunkZ);
+							CChunk* chunk = worlds[players[clientID]->worldIdx]->GetChunkByCoord(chunkX, chunkZ);
 							for (int j = 0; j < CHUNK_SIZE; ++j)
 								memcpy(buffer + 20 + j * sizeof(float), &chunk->terrainData[i][j], sizeof(float));
 
 							send(sockets[clientID]->socket, buffer, sizeof(buffer), 0);
 						}
 
+						break;
+					}
+					case 21: // Update Player pos
+					{
+						VECTOR pre = players[clientID]->pos;
+
+						CDataUtil::GetBytes(sizeBuffer + 8,
+							&((players[clientID])->pos), sizeof((players[clientID])->pos));
+						CDataUtil::GetBytes(sizeBuffer + 8 + sizeof(players[clientID]->pos),
+							&((players[clientID])->velocity), sizeof((players[clientID])->velocity));
+
+						if (pre % CHUNK_SIZE != players[clientID]->pos % CHUNK_SIZE)
+						{
+							worlds[players[clientID]->worldIdx]->GetChunkByCoord(pre % CHUNK_SIZE)->active = false;
+							worlds[players[clientID]->worldIdx]->GetChunkByCoord(players[clientID]->pos % CHUNK_SIZE)->active = true;
+						}
+
+						CDataUtil::ContactHeader(buffer, clientID, 21);
+						memcpy(buffer + 8,
+							&players[clientID]->pos, sizeof(players[clientID]->pos));
+						memcpy(buffer + 8 + sizeof(players[clientID]->pos),
+							&players[clientID]->velocity, sizeof(players[clientID]->velocity));
+
+						Send_All(buffer, sizeof(buffer), clientID);
 						break;
 					}
 					case 0xFF:		// String Message
@@ -397,7 +415,7 @@ int CCore::Listen()
 		}
 
 	}
-	Close();
+	//Close();
 }
 
 void CCore::Send_All(char* buffer, size_t buffersize, int Client_ID)
@@ -418,6 +436,7 @@ bool CCore::Close()
 	WSACleanup();		// 소켓 종료
 	return true;
 }
+
 
 void CCore::CloseSocket(int CloseSocketIndex)
 {
@@ -442,11 +461,27 @@ void CCore::CloseSocket(int CloseSocketIndex)
 	}
 	index--;
 	printf("%d번 클라 퇴장\n", CloseSocketIndex);
-	CDataUtil::SetData(Buffer, sizeof(Buffer), 2, CloseSocketIndex, sockets);
+	CDataUtil::ContactHeader(Buffer, index, 2);
 	for (int i = 0; i < index; i++)
 	{
 		send(sockets[i]->socket, Buffer, sizeof(Buffer), 0);	// 플레이어가 사라졌음을 모두에게 전달
 	}
+}
+
+bool CCore::AddWorld(int seed)
+{
+	CWorld* world = new CWorld();
+	if (world == NULL)
+	{
+		puts("Create World Failed");
+		return false;
+	}
+
+	// 월드 정보 구성
+	world->CreateWorld(0);
+
+	worlds.push_back(world);
+
 }
 
 void CCore::SetSOCKADDR(SOCKADDR_IN* sock_addr, int family, int port, int addr)
@@ -469,4 +504,15 @@ void CCore::TimeOut()
 			CCore::CloseSocket(i);
 		}
 	}
+}
+
+unsigned int CCore::WorldUpdate(LPVOID p)
+{
+	std::vector<CWorld*>::iterator iter;
+	std::vector<CWorld*>::iterator iterEnd = GET_SINGLE(CCore)->worlds.end();
+	for (iter = GET_SINGLE(CCore)->worlds.begin(); iter != iterEnd; iter++)
+	{
+		(*iter)->Update();
+	}
+	return 0;
 }

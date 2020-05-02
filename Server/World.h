@@ -8,6 +8,9 @@
 class CWorld
 {
 private:
+	static unsigned int gObjectCounter;
+
+private:
 	std::vector<STRUCTURE_DATA> structures;
 	CChunk* chunks[CHUNKS_PER_WORLD][CHUNKS_PER_WORLD];
 	std::vector<CObject*> objects;
@@ -22,15 +25,23 @@ public:
 
 public:
 	void Update();
+	void CreateWorld(int seed);
+
+	static void MakeObjectBuffer(char* buffer, int objectCountID, int objectID, VECTOR pos);
 
 public:
 	CChunk* GetChunkByCoord(int chunkX, int chunkZ);
 	CChunk* GetChunkByCoord(VECTOR_INT coord);
 	CChunk* GetChunkByWorldPos(VECTOR_INT pos);
 	bool AddStructure(STRUCTURE_DATA tStructureData);
-	
+	std::vector<CObject*> GetObjects() const
+	{
+		return objects;
+	}
+
 private:
-	void CreateWorld(int seed);
+	void CreateLandScape(int seed);
+	void AddObject(int objectID, VECTOR pos);
 	float FalloffModify(float value);
 };
 

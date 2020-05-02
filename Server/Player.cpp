@@ -1,7 +1,7 @@
 #include "Player.h"
 
-CPlayer::CPlayer(int _client_id):
-	CObject(),
+CPlayer::CPlayer(unsigned int objectCountID, int _client_id,int _maxHealth, int _maxStamina,VECTOR pos):
+	CMoveObject(objectCountID, 0, _maxHealth, _maxStamina, pos),
 	client_id(_client_id)
 {
 	memset(items, 0, sizeof(items));

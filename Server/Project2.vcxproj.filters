@@ -16,9 +16,6 @@
     <Filter Include="01. Server">
       <UniqueIdentifier>{4835cdd2-c198-45fb-9bdf-8b17239f2146}</UniqueIdentifier>
     </Filter>
-    <Filter Include="02. Util">
-      <UniqueIdentifier>{495d991d-4353-433a-b056-b4d0e11d27b2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="03. World">
       <UniqueIdentifier>{2cb2a241-d90b-424b-9af4-c6fc97cff39e}</UniqueIdentifier>
     </Filter>
@@ -28,19 +25,16 @@
     <Filter Include="05. Other">
       <UniqueIdentifier>{1bcb6374-c5e1-46ae-839d-f7beda2e37a9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="02. Thread">
+      <UniqueIdentifier>{495d991d-4353-433a-b056-b4d0e11d27b2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.cpp">
       <Filter>01. Server</Filter>
     </ClCompile>
-    <ClCompile Include="DataUtil.cpp">
-      <Filter>02. Util</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="ThreadUtil.cpp">
-      <Filter>02. Util</Filter>
     </ClCompile>
     <ClCompile Include="World.cpp">
       <Filter>03. World</Filter>
@@ -57,6 +51,18 @@
     <ClCompile Include="Player.cpp">
       <Filter>04. Object</Filter>
     </ClCompile>
+    <ClCompile Include="ResourceObject.cpp">
+      <Filter>04. Object</Filter>
+    </ClCompile>
+    <ClCompile Include="MoveObject.cpp">
+      <Filter>04. Object</Filter>
+    </ClCompile>
+    <ClCompile Include="ThreadManager.cpp">
+      <Filter>02. Thread</Filter>
+    </ClCompile>
+    <ClCompile Include="DataUtil.cpp">
+      <Filter>01. Server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Types.h">
@@ -67,12 +73,6 @@
     </ClInclude>
     <ClInclude Include="Server.h">
       <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="DataUtil.h">
-      <Filter>02. Util</Filter>
-    </ClInclude>
-    <ClInclude Include="ThreadUtil.h">
-      <Filter>02. Util</Filter>
     </ClInclude>
     <ClInclude Include="World.h">
       <Filter>03. World</Filter>
@@ -88,6 +88,21 @@
     </ClInclude>
     <ClInclude Include="Player.h">
       <Filter>04. Object</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceObject.h">
+      <Filter>04. Object</Filter>
+    </ClInclude>
+    <ClInclude Include="MoveObject.h">
+      <Filter>04. Object</Filter>
+    </ClInclude>
+    <ClInclude Include="ThreadManager.h">
+      <Filter>02. Thread</Filter>
+    </ClInclude>
+    <ClInclude Include="DataUtil.h">
+      <Filter>01. Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Macro.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
